@@ -41,7 +41,7 @@ Please note that after changing the `Custom.nsh` file, you will need to recompil
 # Some tips
 
 ### Lazy to update your portable development environment(s)?
-Some people (including me) will be tired if they need to download the new (portable version of) desktop environment everytime a new update was released. Luckily there is MSYS2 that will do all these updates for you by just inputting a single command (`pacman -Syu`), and it is portable too! Make sure to download the `tar.xz` version from SourceForge [here](https://sourceforge.net/projects/msys2/files/Base/x86_64/).
+Some people (including me) will be tired if they need to download the new (portable version of) development environment everytime a new update was released. Luckily there is MSYS2 that will do all these updates for you by just inputting a single command (`pacman -Syu`), and it is portable too! Make sure to download the `tar.xz` version from SourceForge [here](https://sourceforge.net/projects/msys2/files/Base/x86_64/).
 
 ### Supported environment variables
 Assuming that you installed VSCodePortable on `D:\Apps\VSCodePortable` (where `VSCodePortable.exe` exist), here is some useful environment variable paths for you:
