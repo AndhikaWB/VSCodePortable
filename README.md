@@ -14,6 +14,9 @@ Visual Studio Code in [PortableApps.com](https://portableapps.com/) format (unof
   * Support for 4 development environments by default (this include MinGW, Python, Java, and Git). You can also add many others by modifying the launcher config file. They will be added to `PATH` during runtime, but not globally (only affect `Code.exe` and processes run by it).
   * Added context menu items (`Open with Code`) just like the non-portable version. Of course, they will be removed after you close Visual Studio Code.
   
+* Why not use VSCodium instead?
+  * VSCodium is not allowed to use any [proprietary debugging tools](https://github.com/VSCodium/vscodium/blob/master/DOCS.md#proprietary-debugging-tools) made by Microsoft. Including those that are embedded on extensions like [C/C++ extension](https://github.com/Microsoft/vscode-cpptools/issues/21#issuecomment-248349017), and many more extensions. _Hopefully they will open-source it on the future_.
+  
 # How to use?
 
 ### Initial steps
