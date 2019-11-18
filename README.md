@@ -1,5 +1,5 @@
 # VSCodePortable
-Visual Studio Code in [PortableApps.com](https://portableapps.com/) format (unofficial). Can also be applied to VSCodium.
+Visual Studio Code in [PortableApps.com](https://portableapps.com/) format (unofficial). Can also be applied to VSCodium. For Windows 7 (or later) only!
 
 # Wait what?
 * Why do I need it if Visual Studio Code supported [portable mode](https://code.visualstudio.com/docs/editor/portable) out-of-the-box?
@@ -17,6 +17,10 @@ Visual Studio Code in [PortableApps.com](https://portableapps.com/) format (unof
 * Why not use VSCodium instead?
 
   VSCodium is not allowed to use any [proprietary debugging tools](https://github.com/VSCodium/vscodium/blob/master/DOCS.md#proprietary-debugging-tools) made by Microsoft. Including those that are embedded on extensions like [C/C++ extension](https://github.com/Microsoft/vscode-cpptools/issues/21#issuecomment-248349017), and many more extensions. _Hopefully they will open-source it on the future_.
+  
+* What are the differences between this and Gareth Flower's [vscode-portable](https://github.com/garethflowers/vscode-portable)?
+
+  Uhh.. I don't know. I made this from scratch, not based on his release, and my release(s) doesn't download Visual Studio Code automatically (feel free to make any PR). You can see my VSCodePortable features earlier on this _ReadMe_ file, anyway.
   
 # How to use?
 
