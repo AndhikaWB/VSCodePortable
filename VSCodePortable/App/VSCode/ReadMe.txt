@@ -1,0 +1,1 @@
+Your Visual Studio Code files will be placed in this folder.

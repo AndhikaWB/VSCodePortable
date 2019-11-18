@@ -1,0 +1,22 @@
+{
+    "telemetry.enableTelemetry": false,
+    "telemetry.enableCrashReporter": false,
+    "update.enableWindowsBackgroundUpdates": false,
+    "update.mode": "none",
+    "extensions.autoUpdate": false,
+    "extensions.showRecommendationsOnlyOnDemand": true,
+    "workbench.settings.enableNaturalLanguageSearch": false,
+    "workbench.enableExperiments": false,
+    "editor.minimap.renderCharacters": false,
+    "editor.minimap.showSlider": "always",
+    "terminal.integrated.shell.windows": "cmd.exe",
+    "code-runner.enableAppInsights": false,
+    "code-runner.saveFileBeforeRun": true,
+    "code-runner.runInTerminal": true,
+    "code-runner.executorMap": {
+        "c": "cd $dir && gcc \"$fileName\" -o \"$fileNameWithoutExt.exe\" && \"$fileNameWithoutExt.exe\" && del /q \"$fileNameWithoutExt.exe\" && del /q \"tempCodeRunnerFile.*\" 2>nul",
+        "cpp": "cd $dir && gcc \"$fileName\" -o \"$fileNameWithoutExt.exe\" -lstdc++ && \"$fileNameWithoutExt.exe\" && del /q \"$fileNameWithoutExt.exe\" && del /q \"tempCodeRunnerFile.*\" 2>nul",
+        "python": "cd $dir && python -u \"$fileName\" && del /q \"tempCodeRunnerFile.*\" 2>nul",
+        "java": "cd $dir && javac \"$fileName\" && java \"$fileNameWithoutExt\" && del /q \"$fileNameWithoutExt.class\" && del /q \"tempCodeRunnerFile.*\" 2>nul"
+    }
+}
