@@ -15,7 +15,8 @@ Visual Studio Code in [PortableApps.com](https://portableapps.com/) format (unof
   * Added context menu items (`Open with Code`) just like the non-portable version. Of course, they will be removed after you close Visual Studio Code.
   
 * Why not use VSCodium instead?
-  * VSCodium is not allowed to use any [proprietary debugging tools](https://github.com/VSCodium/vscodium/blob/master/DOCS.md#proprietary-debugging-tools) made by Microsoft. Including those that are embedded on extensions like [C/C++ extension](https://github.com/Microsoft/vscode-cpptools/issues/21#issuecomment-248349017), and many more extensions. _Hopefully they will open-source it on the future_.
+
+  VSCodium is not allowed to use any [proprietary debugging tools](https://github.com/VSCodium/vscodium/blob/master/DOCS.md#proprietary-debugging-tools) made by Microsoft. Including those that are embedded on extensions like [C/C++ extension](https://github.com/Microsoft/vscode-cpptools/issues/21#issuecomment-248349017), and many more extensions. _Hopefully they will open-source it on the future_.
   
 # How to use?
 
