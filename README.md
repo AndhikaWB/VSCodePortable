@@ -93,5 +93,5 @@ Good luck!
 
 # License
 * VSCodePortable under this [GPL v2.0 license](https://github.com/AndhikaWB/VSCodePortable/blob/master/LICENSE)
-* PortableApps.com under this [GPL v2.0 license](https://github.com/AndhikaWB/VSCodePortable/blob/master/LICENSE)
+* PortableApps.com Launcher under this [GPL v2.0 license](https://github.com/AndhikaWB/VSCodePortable/blob/master/LICENSE)
 * Visual Studio Code under this (not MIT) [license](https://code.visualstudio.com/license)
