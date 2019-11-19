@@ -94,4 +94,5 @@ Good luck!
 # License
 * VSCodePortable under this [GPL v2.0 license](https://github.com/AndhikaWB/VSCodePortable/blob/master/LICENSE)
 * PortableApps.com Launcher under this [GPL v2.0 license](https://github.com/AndhikaWB/VSCodePortable/blob/master/LICENSE)
+* Code Runner under this [MIT license](https://github.com/AndhikaWB/VSCodePortable/blob/master/VSCodePortable/App/DefaultData/VSCode/extensions/formulahendry.code-runner-0.9.14/LICENSE.txt}
 * Visual Studio Code under this (not MIT) [license](https://code.visualstudio.com/license)
