@@ -20,7 +20,7 @@ Visual Studio Code in [PortableApps.com](https://portableapps.com/) format (unof
   
 * What are the differences between this and Gareth Flower's [vscode-portable](https://github.com/garethflowers/vscode-portable)?
 
-  Uhh.. I don't know. I made this from scratch, not based on his release, and my release(s) doesn't download Visual Studio Code automatically (feel free to make any PR). You can see my VSCodePortable features earlier on this _ReadMe_ file, anyway.
+  Uhh.. I don't know. I made this from scratch, not based on his release, and my release(s) doesn't download Visual Studio Code automatically (feel free to make any PR). You can see my VSCodePortable features earlier in this _ReadMe_ file, anyway.
   
 # How to use?
 
