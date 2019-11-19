@@ -37,7 +37,11 @@ ${SegmentPre}
 	${ReadLauncherConfig} $2 Environment GIT_ROOT
 	ExpandEnvStrings $2 $2
 	${If} ${FileExists} '$2\cmd\git.exe'
-		StrCpy $0 '$0;$2\cmd'
+		${If} ${FileExists} '$2\bin\bash.exe'
+			StrCpy $0 '$0;$2\bin;$2\cmd'
+		${Else}
+			StrCpy $0 '$0;$2\cmd'
+		${EndIf}
 	${EndIf}
 
 	${ReadLauncherConfig} $3 Environment MINGW_ROOT
