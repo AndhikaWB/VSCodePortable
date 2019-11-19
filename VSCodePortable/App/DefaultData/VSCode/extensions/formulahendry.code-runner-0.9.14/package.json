@@ -51,11 +51,11 @@
       },
       {
         "command": "code-runner.runByLanguage",
-        "title": "Run By Language"
+        "title": "Run Code By Language"
       },
       {
         "command": "code-runner.stop",
-        "title": "Stop Code Run"
+        "title": "Stop Running Code"
       }
     ],
     "keybindings": [
@@ -106,12 +106,12 @@
     },
     "configuration": {
       "type": "object",
-      "title": "Run Code configuration",
+      "title": "Code Runner",
       "properties": {
         "code-runner.executorMapByGlob": {
           "type": "object",
           "default": {
-            "pom.xml": "cd $dir && mvn clean package"
+            "pom.xml": "cd $dirWithoutTrailingSlash && mvn clean package"
           },
           "description": "Set the executor by glob.",
           "scope": "resource"
@@ -120,10 +120,10 @@
           "type": "object",
           "default": {
             "javascript": "node",
-            "java": "cd $dir && javac $fileName && java $fileNameWithoutExt",
-            "c": "cd $dir && gcc $fileName -o $fileNameWithoutExt && $dir$fileNameWithoutExt",
-            "cpp": "cd $dir && g++ $fileName -o $fileNameWithoutExt && $dir$fileNameWithoutExt",
-            "objective-c": "cd $dir && gcc -framework Cocoa $fileName -o $fileNameWithoutExt && $dir$fileNameWithoutExt",
+            "java": "cd $dirWithoutTrailingSlash && javac \"$fileName\" && java \"$fileNameWithoutExt\"",
+            "c": "cd $dirWithoutTrailingSlash && gcc \"$fileName\" -o \"$fileNameWithoutExt\" && \"$dirWithoutQuotes$fileNameWithoutExt\"",
+            "cpp": "cd $dirWithoutTrailingSlash && g++ \"$fileName\" -o \"$fileNameWithoutExt\" && \"$dirWithoutQuotes$fileNameWithoutExt\"",
+            "objective-c": "cd $dirWithoutTrailingSlash && gcc -framework Cocoa \"$fileName\" -o \"$fileNameWithoutExt\" && \"$dirWithoutQuotes$fileNameWithoutExt\"",
             "php": "php",
             "python": "python -u",
             "perl": "perl",
@@ -148,15 +148,15 @@
             "r": "Rscript",
             "applescript": "osascript",
             "clojure": "lein exec",
-            "haxe": "haxe --cwd $dirWithoutTrailingSlash --run $fileNameWithoutExt",
-            "rust": "cd $dir && rustc $fileName && $dir$fileNameWithoutExt",
+            "haxe": "haxe --cwd $dirWithoutTrailingSlash --run \"$fileNameWithoutExt\"",
+            "rust": "cargo run",
             "racket": "racket",
             "scheme": "csi -script",
             "ahk": "autohotkey",
             "autoit": "autoit3",
             "dart": "dart",
-            "pascal": "cd $dir && fpc $fileName && $dir$fileNameWithoutExt",
-            "d": "cd $dir && dmd $fileName && $dir$fileNameWithoutExt",
+            "pascal": "cd $dirWithoutTrailingSlash && fpc \"$fileName\" && \"$dirWithoutQuotes$fileNameWithoutExt\"",
+            "d": "cd $dirWithoutTrailingSlash && dmd \"$fileName\" && \"$dirWithoutQuotes$fileNameWithoutExt\"",
             "haskell": "runhaskell",
             "nim": "nim compile --verbosity:0 --hints:off --run",
             "lisp": "sbcl --script",
@@ -168,24 +168,24 @@
         "code-runner.executorMapByFileExtension": {
           "type": "object",
           "default": {
-            ".vb": "cd $dir && vbc /nologo $fileName && $dir$fileNameWithoutExt",
+            ".vb": "cd $dirWithoutTrailingSlash && vbc /nologo \"$fileName\" && \"$dirWithoutQuotes$fileNameWithoutExt\"",
             ".vbs": "cscript //Nologo",
             ".scala": "scala",
             ".jl": "julia",
             ".cr": "crystal",
             ".ml": "ocaml",
             ".exs": "elixir",
-            ".hx": "haxe --cwd $dirWithoutTrailingSlash --run $fileNameWithoutExt",
+            ".hx": "haxe --cwd $dirWithoutTrailingSlash --run \"$fileNameWithoutExt\"",
             ".rkt": "racket",
             ".scm": "csi -script",
             ".ahk": "autohotkey",
             ".au3": "autoit3",
-            ".kt": "cd $dir && kotlinc $fileName -include-runtime -d $fileNameWithoutExt.jar && java -jar $fileNameWithoutExt.jar",
+            ".kt": "cd $dirWithoutTrailingSlash && kotlinc \"$fileName\" -include-runtime -d \"$fileNameWithoutExt.jar\" && java -jar \"$fileNameWithoutExt.jar\"",
             ".kts": "kotlinc -script",
             ".dart": "dart",
-            ".pas": "cd $dir && fpc $fileName && $dir$fileNameWithoutExt",
-            ".pp": "cd $dir && fpc $fileName && $dir$fileNameWithoutExt",
-            ".d": "cd $dir && dmd $fileName && $dir$fileNameWithoutExt",
+            ".pas": "cd $dirWithoutTrailingSlash && fpc \"$fileName\" && \"$dirWithoutQuotes$fileNameWithoutExt\"",
+            ".pp": "cd $dirWithoutTrailingSlash && fpc \"$fileName\" && \"$dirWithoutQuotes$fileNameWithoutExt\"",
+            ".d": "cd $dirWithoutTrailingSlash && dmd \"$fileName\" && \"$dirWithoutQuotes$fileNameWithoutExt\"",
             ".hs": "runhaskell",
             ".nim": "nim compile --verbosity:0 --hints:off --run",
             ".csproj": "dotnet run --project",
@@ -244,7 +244,7 @@
         },
         "code-runner.saveFileBeforeRun": {
           "type": "boolean",
-          "default": false,
+          "default": true,
           "description": "Whether to save the current file before running.",
           "scope": "resource"
         },
@@ -263,7 +263,7 @@
         "code-runner.runInTerminal": {
           "type": "boolean",
           "default": false,
-          "description": "Whether to run code in Integrated Terminal.",
+          "description": "Whether to run code in integrated terminal.",
           "scope": "resource"
         },
         "code-runner.terminalRoot": {
