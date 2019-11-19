@@ -63,7 +63,7 @@ Some people (including me) will be tired if they need to download the new (porta
     * MinGW (64 bit): `pacman -S mingw-w64-x86_64-gcc mingw-w64-x86_64-gdb`
     * Python (64 bit): `pacman -S mingw-w64-x86_64-python3 mingw-w64-x86_64-python3-pip`
     * I only recommend those 2 packages, download [Git](https://git-scm.com/download/win) and [JDK](https://developers.redhat.com/products/openjdk/download) from the official site instead and choose the portable version if any (usually `.zip` or `.tar` or `.7z` format)
-7. Change both MINGW_ROOT and PYTHON_ROOT variables inside `VSCodePortable.ini` to `C:\MSYS64\mingw64`
+7. Change both `MINGW_ROOT` and `PYTHON_ROOT` variables inside `VSCodePortable.ini` to `C:\MSYS64\mingw64`
 8. Start `VSCodePortable.exe`, both of them will now be detected (if exist) and added to `PATH`
 
 ### Supported environment variables
