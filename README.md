@@ -50,7 +50,7 @@ Please note that after changing the `Custom.nsh` file, you will need to recompil
 # Some tips
 
 ### Lazy to update your portable development environment(s)?
-Some people (including me) will be tired if they need to download the new (portable version of) development environment everytime a new update was released. Luckily there is [MSYS2](https://www.msys2.org/) that will do all these updates for you by just inputting a single command (`pacman -Syu`), and it is portable too! Assuming that you have 64 bit OS, you can download it (`.tar` format) from SourceForge [here](https://sourceforge.net/projects/msys2/files/Base/x86_64/).
+Some people (including me) will be tired if they need to download the new (portable version of) development environment everytime a new update was released. Luckily there is [MSYS2](https://www.msys2.org/) that will do all these updates for you by just inputting a single command (`pacman -Syuu`), and it is portable too! Assuming that you have 64 bit OS, you can download it (`.tar` format) from SourceForge [here](https://sourceforge.net/projects/msys2/files/Base/x86_64/).
 
 1. Extract the downloaded MSYS2 to a short path, for example: `C:\MSYS64`
 2. Run `msys2_shell.bat` inside the folder (`C:\MSYS64` is the root folder, so it should be `C:\MSYS64\msys2_shell.bat`)
