@@ -50,7 +50,21 @@ Please note that after changing the `Custom.nsh` file, you will need to recompil
 # Some tips
 
 ### Lazy to update your portable development environment(s)?
-Some people (including me) will be tired if they need to download the new (portable version of) development environment everytime a new update was released. Luckily there is [MSYS2](https://www.msys2.org/) that will do all these updates for you by just inputting a single command (`pacman -Syu`), and it is portable too! Make sure to download the `tar.xz` version from SourceForge [here](https://sourceforge.net/projects/msys2/files/Base/x86_64/). _Please note that you may need to know the (very) basic of Linux to be able to download and update packages using MSYS2_.
+Some people (including me) will be tired if they need to download the new (portable version of) development environment everytime a new update was released. Luckily there is [MSYS2](https://www.msys2.org/) that will do all these updates for you by just inputting a single command (`pacman -Syu`), and it is portable too! Assuming that you have 64 bit OS, you can download it (`.tar` format) from SourceForge [here](https://sourceforge.net/projects/msys2/files/Base/x86_64/).
+
+1. Extract the downloaded MSYS2 to a short path, for example: `C:\MSYS64`
+2. Run `msys2_shell.bat` inside the folder (`C:\MSYS64` is the root folder, so it should be `C:\MSYS64\msys2_shell.bat`)
+3. Restart MSYS:
+    * Close MSYS2 by clicking Windows close button (don't type `exit`!)
+    * Run `msys2_shell.bat` again
+4. Inside MSYS2 shell, type `pacman -Syuu` (and enter)
+5. Repeat step 3-4 until all packages are up to date (MSYS2 will say `there is nothing to do`)
+6. Install the packages you want. For example:
+    * MinGW (64 bit): `pacman -S mingw-w64-x86_64-gcc mingw-w64-x86_64-gdb`
+    * Python (64 bit): `pacman -S mingw-w64-x86_64-python3 mingw-w64-x86_64-python3-pip`
+    * I only recommend those 2 packages, download [Git](https://git-scm.com/download/win) and [JDK](https://developers.redhat.com/products/openjdk/download) from the official site instead and choose the portable version if any (usually `.zip` or `.tar` or `.7z` format)
+7. Change both MINGW_ROOT and PYTHON_ROOT variables inside `VSCodePortable.ini` to `C:\MSYS64\mingw64`
+8. Start `VSCodePortable.exe`, both of them will now be detected (if exist) and added to `PATH`
 
 ### Supported environment variables
 Assuming that you installed VSCodePortable on `D:\Apps\VSCodePortable` (where `VSCodePortable.exe` exist), here is some useful environment variable paths for you:
