@@ -77,7 +77,7 @@ Assuming that you installed VSCodePortable on `D:\Apps\VSCodePortable` (where `V
   * `PAL:LauncherFile` : `VSCodePortable.exe`
   * `PAL:PortableAppsDir` : `D:\Apps`
   * `PAL:CommonFilesDir` : `D:\Apps\CommonFiles`
-  * More info from [here](https://portableapps.com/manuals/PortableApps.comLauncher/ref/launcher.ini/environment.html)
+  * More from [here](https://portableapps.com/manuals/PortableApps.comLauncher/ref/launcher.ini/environment.html)
 
 * Only read by `Code.exe` and processes run by it:
   * `UserProfile` : `C:\User\YourUserName` (virtualized to `%PAL:DataDir%\Virtual`)
@@ -87,6 +87,6 @@ Assuming that you installed VSCodePortable on `D:\Apps\VSCodePortable` (where `V
   * `ProgramData` : `C:\ProgramData` (virtualized to `%PAL:DataDir%\Virtual\ProgramData`)
   * `ComSpec` : `C:\Windows\System32\cmd.exe`
   * `SystemDrive` : `C:`
-  * And many more from [here](https://ss64.com/nt/syntax-variables.html)
+  * More from [here](https://ss64.com/nt/syntax-variables.html)
   
 Good luck!
