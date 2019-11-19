@@ -83,7 +83,8 @@ ${SegmentPre}
 		${SetEnvironmentVariablesPath} PATH $0
 	${Else}
 		MessageBox MB_OK|MB_ICONSTOP 'The PATH environment variable is too long. Try shortening it or use a special build of NSIS.'
-		Abort
+		Call Unload
+		Quit
 	${EndIf}
 !macroend
 
