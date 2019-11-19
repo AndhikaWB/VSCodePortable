@@ -31,6 +31,7 @@ The first thing you probably want to do after downloading VSCodePortable.
 2. Extract it anywhere (please avoid using long path). For example, `D:\Apps\VSCodePortable` (where `VSCodePortable.exe` must exist)
 2. Download Visual Studio Code (`.zip` format) from [here](https://code.visualstudio.com/#alt-downloads)
 3. Extract it to `D:\Apps\VSCodePortable\App\VSCode` (where `Code.exe` must exist)
+4. Done, please always start Visual Studio Code from `VSCodePortable.exe` (not `Code.exe`!)
 
 ### Setting-up development environment
 Required to make Visual Studio Code recognize your (portable) development environment. MinGW, Python, Java, and Git are supported by default. Your development environment must be downloaded first (and placed somewhere on the disk). They will be appended to `PATH` before launching Visual Studio Code and will be removed from `PATH` afterward.
