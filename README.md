@@ -86,8 +86,9 @@ Assuming that you installed VSCodePortable on `D:\Apps\VSCodePortable` (where `V
   * `LocalAppData` : `C:\User\YourUserName\AppData\Local` (virtualized to `%PAL:DataDir%\Virtual\AppData\Local`)
   * `LocalAppDataLow` : `C:\User\YourUserName\AppData\LocalLow` (can't be virtualized)
   * `ProgramData` : `C:\ProgramData` (virtualized to `%PAL:DataDir%\Virtual\ProgramData`)
+
+* Global (read by all apps):
   * `ComSpec` : `C:\Windows\System32\cmd.exe`
-  * `SystemDrive` : `C:`
   * More from [here](https://ss64.com/nt/syntax-variables.html)
   
 Good luck!
