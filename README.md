@@ -13,7 +13,7 @@ Visual Studio Code in [PortableApps.com](https://portableapps.com/) format (unof
   * Most of the important system path variable are virtualized (this include `USERPROFILE`, `APPDATA`, `LOCALAPPDATA`, and `PROGRAMDATA`). So even Visual Studio Code or their extensions will usually write its data on VSCodePortable `Data` folder. Meaning that no changes are made to the system, and you can simply copy VSCodePortable to your portable drive.
   * Support for 4 development environments by default (this include MinGW, Python, Java, and Git). You can also add many others by modifying the launcher config file. They will be added to `PATH` during runtime, but not globally (only affect `Code.exe` and processes run by it).
   * Added context menu items (`Open with Code`) just like the non-portable version. Of course, they will be removed after you close Visual Studio Code.
-  * Also added [Code Runner](https://marketplace.visualstudio.com/items?itemName=formulahendry.code-runner) extension to easily execute (supported) codes. This may be annoying for advanced users but you can remove/uninstall it later anyway.
+  * Also added [Code Runner](https://marketplace.visualstudio.com/items?itemName=formulahendry.code-runner) extension (slightly modified by me) to easily execute (supported) codes. This may be annoying for advanced users but you can remove/uninstall it later anyway.
   
 * Why not use VSCodium instead?
 
