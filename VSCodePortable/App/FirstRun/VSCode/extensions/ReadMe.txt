@@ -1,0 +1,1 @@
+Place your VSIX files here to install them on first run.

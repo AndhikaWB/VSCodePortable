@@ -1,0 +1,1 @@
+Download it from https://github.com/git-for-windows/git/releases/latest

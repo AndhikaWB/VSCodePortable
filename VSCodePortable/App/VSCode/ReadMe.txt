@@ -1,0 +1,1 @@
+Download it from https://code.visualstudio.com/#alt-downloads
