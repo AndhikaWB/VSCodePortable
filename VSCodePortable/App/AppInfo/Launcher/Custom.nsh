@@ -1,3 +1,6 @@
+; Please recompile the launcher to apply changes made in this file
+; https://portableapps.com/apps/development/portableapps.com_launcher
+
 ${SegmentFile}
 
 Var AppDir
@@ -17,21 +20,22 @@ Var NodeJSDir
 Var GolangDir
 
 ${SegmentInit}
-	; Set internal user variables
+	; Define various paths (hard code only)
+	; Will not be added as environment variables
 	StrCpy "$AppDir" "$EXEDIR\App"
 	StrCpy "$DataDir" "$EXEDIR\Data"
-	StrCpy "$VSCodeDataDir" "$EXEDIR\App\VSCode\data"
 	StrCpy "$DefaultDataDir" "$EXEDIR\App\FirstRun"
+	StrCpy "$VSCodeDataDir" "$EXEDIR\App\VSCode\data"
 	ExpandEnvStrings "$CmdPath" "%COMSPEC%"
 
-	; Copy "VSCodePortable.ini" file
+	; Copy "VSCodePortable.ini" (first run)
 	${IfNot} ${FileExists} "$EXEDIR\$AppID.ini"
 		CopyFiles /Silent "$DefaultDataDir\$AppID.ini" "$EXEDIR\$AppID.ini"
 	${EndIf}
 !macroend
 
 ${SegmentPre}
-	; Set custom environment variables
+	; Set custom environment variable for launcher related directories
 	${SetEnvironmentVariablesPath} "PAL:LauncherDir" "$EXEDIR"
 	${SetEnvironmentVariablesPath} "PAL:LauncherPath" "$EXEPATH"
 	${SetEnvironmentVariablesPath} "PAL:LauncherFile" "$EXEFILE"
@@ -40,41 +44,54 @@ ${SegmentPre}
 !macroend
 
 ${SegmentPreExec}
-	; Read "PATH" environment variable
+	; Use custom "PATH" if provided in "VSCodePortable.ini"
 	${ReadUserConfig} "$BasePath" "PATH"
+	; Read "PATH" environment variable (from system) if not defined
 	${If} "$BasePath" == ""
 		ReadEnvStr "$BasePath" "PATH"
 	${ElseIf} "$BasePath" == "__clean__"
-		ReadEnvStr "$BasePath" "$WINDIR\System32;$WINDIR;$WINDIR\System32\Wbem;$WINDIR\System32\WindowsPowerShell\v1.0\"
+		; Use "PATH=__clean__" to emulate clean Windows 11 installation
+		ReadEnvStr "$BasePath" "$WINDIR\System32;$WINDIR;$WINDIR\System32\WindowsPowerShell\v1.0\;$WINDIR\System32\OpenSSH\"
 	${EndIf}
 	ExpandEnvStrings "$BasePath" "$BasePath"
 
-	; Supported development environments
-	; Please be aware when using MSYS2 packages
-	; They may have unsupported folder structures
+	; Auto-detect some popular development environments
+	; MSYS2 packages may have different folder structures!
 
+	; Git
 	${ReadUserConfig} "$GitDir" "GIT"
 	ExpandEnvStrings "$GitDir" "$GitDir"
 	${If} ${FileExists} "$GitDir\cmd\git.exe"
+		; Change Git home directory (can be annoying but good for portability)
+		; You can workaround this by replacing cd with an alias (in .bashrc and .zshrc)
+		; Those files will automatically be set on first run, no need to do anything
+		CreateDirectory "$DataDir\misc\GitHome"
+		${SetEnvironmentVariablesPath} "HOME" "$DataDir\misc\GitHome"
 		${If} ${FileExists} "$GitDir\post-install.bat"
+			; Portable Git post installation
 			nsExec::Exec "$\"$CmdPath$\" /C $\"$\"$GitDir\post-install.bat$\"$\""
 		${EndIf}
 		StrCpy "$ExtraPath" "$GitDir\cmd;$GitDir\usr\bin"
 	${EndIf}
 
+	; MinGW (GCC)
 	${ReadUserConfig} "$MinGWDir" "MINGW"
 	ExpandEnvStrings "$MinGWDir" "$MinGWDir"
 	${If} ${FileExists} "$MinGWDir\bin\gcc.exe"
 		StrCpy "$ExtraPath" "$ExtraPath;$MinGWDir\bin"
 	${EndIf}
 
-	; For portability reason, do not install Python module per user
-	; Use "Global Module Installation" instead when using Python extension
-	; This is already set by default, go to settings to revert it
+	; Python user packages will be installed in "Data\misc\Python" folder
+	; Packages installed globally are not affected by "PYTHONUSERBASE"
+	; Don't forget to recompile the launcher in case you reverted it
 
+	; Python
 	${ReadUserConfig} "$PythonDir" "PYTHON"
 	ExpandEnvStrings "$PythonDir" "$PythonDir"
 	${If} ${FileExists} "$PythonDir\python.exe"
+		; Change user base directory (for portability)
+		${SetEnvironmentVariablesPath} "PYTHONUSERBASE" "$DataDir\misc\Python"
+		; Get "scripts" directory and add it to "PATH"
 		nsExec::ExecToStack "$\"$PythonDir\python.exe$\" -m site --user-site"
 		Pop $R1
 		${If} $R1 == 0
@@ -92,6 +109,7 @@ ${SegmentPreExec}
 		${EndIf}
 	${EndIf}
 
+	; Java (JRE/JDK)
 	${ReadUserConfig} "$JavaDir" "JAVA"
 	ExpandEnvStrings "$JavaDir" "$JavaDir"
 	${If} ${FileExists} "$JavaDir\bin\java.exe"
@@ -99,13 +117,16 @@ ${SegmentPreExec}
 		${SetEnvironmentVariablesPath} "JAVA_HOME" "$JavaDir"
 	${EndIf}
 
-	; For portability reason, "prefix" and "cache" path must be changed beforehand
-	; You can either edit "npmrc" file directly or use "npm config set" command
-	; Why not automate it? Many people use non-portable Node.js already
+	; For portable usage, you need to change Node.js "prefix" and "cache" path manually
+	; Please edit "npmrc" file or simply use "npm config set XXX YYY" command
+	; Feel free to open a pull request if you want to automate it
+	; No need to change anything if you don't need portability
 
+	; Node.js
 	${ReadUserConfig} "$NodeJSDir" "NODEJS"
 	ExpandEnvStrings "$NodeJSDir" "$NodeJSDir"
 	${If} ${FileExists} "$NodeJSDir\node.exe"
+		; Get prefix directory and add it to "PATH"
 		nsExec::ExecToStack "$\"$CmdPath$\" /C $\"$\"$NodeJSDir\npm.cmd$\"$\" config get prefix"
 		Pop $R1
 		${If} $R1 == 0
@@ -116,6 +137,7 @@ ${SegmentPreExec}
 		${EndIf}
 	${EndIf}
 
+	; Golang
 	${ReadUserConfig} "$GolangDir" "GOLANG"
 	ExpandEnvStrings "$GolangDir" "$GolangDir"
 	${If} ${FileExists} "$GolangDir\bin\go.exe"
@@ -124,8 +146,8 @@ ${SegmentPreExec}
 	${EndIf}
 
 	; Prepend all valid environments onto the "PATH" environment variable
-	; Modified "PATH" will only be read by VSCode and its spawned processes
-	; "PATH" longer than 8196 bytes will be reverted to default
+	; Modified "PATH" will only be read by VSCode and processes spawned by it
+	; If "PATH" is longer than 8196 bytes, it will be reverted to default (NSIS restriction)
 
 	StrLen $R1 "$ExtraPath_$BasePath_"
 	IntOp $R1 $R1 * ${NSIS_CHAR_SIZE}
@@ -135,13 +157,21 @@ ${SegmentPreExec}
 		MessageBox MB_OK|MB_ICONEXCLAMATION "The modified $\"PATH$\" environment variable is too long, reverting to default as workaround."
 	${EndIf}
 
-	; Copy "user-data" folder
+	; Copy Git home config files (first run)
+	${IfNot} ${FileExists} "$DataDir\misc\GitHome\.bashrc"
+		CopyFiles /Silent "$DefaultDataDir\misc\GitHome\.bashrc" "$DataDir\misc\GitHome"
+	${EndIf}
+	${IfNot} ${FileExists} "$DataDir\misc\GitHome\.zshrc"
+		CopyFiles /Silent "$DefaultDataDir\misc\GitHome\.zshrc" "$DataDir\misc\GitHome"
+	${EndIf}
+
+	; Copy default "user-data" folder (first run)
 	CreateDirectory "$VSCodeDataDir"
 	${IfNot} ${FileExists} "$VSCodeDataDir\user-data\*.*"
 		CopyFiles /Silent "$DefaultDataDir\VSCode\user-data\*.*" "$VSCodeDataDir\user-data"
 	${EndIf}
 
-	; Install VSIX files to "extensions" folder
+	; Install bundled VSIX files to "extensions" folder (first run)
 	${IfNot} ${FileExists} "$VSCodeDataDir\extensions\*.*"
 		FindFirst $R1 $R2 "$DefaultDataDir\VSCode\extensions\*.vsix"
 		CheckFile:
@@ -154,12 +184,12 @@ ${SegmentPreExec}
 		FindClose $R1
 	${EndIf}
 
-	; Create shortcuts to "user-data" folder
+	; Create shortcut to "user-data" folder
 	CreateDirectory "$DataDir"
 	Delete "$DataDir\user-data.lnk"
 	CreateShortCut "$DataDir\user-data.lnk" "$VSCodeDataDir\user-data"
 
-	; Create shortcuts to "extensions" folder
+	; Create shortcut to "extensions" folder
 	Delete "$DataDir\extensions.lnk"
 	CreateShortCut "$DataDir\extensions.lnk" "$VSCodeDataDir\extensions"
 !macroend
@@ -169,26 +199,24 @@ ${OverrideExecute}
 	Exec "$ExecString"
 	Sleep 5000
 
-	; Overwrite values written by VSCode at launch
+	; Overwrite values written by VSCode on launch
 	WriteRegStr HKCR "vscode\shell\open\command" "" "$\"$EXEPATH$\" --open-url -- $\"%1$\""
 	WriteRegStr HKCU "Software\Classes\vscode\shell\open\command" "" "$\"$EXEPATH$\" --open-url -- $\"%1$\""
 
-	CheckProcess:
+	CheckRunning:
 	${If} ${ProcessExists} "Code.exe"
 		${GetProcessPath} "Code.exe" $R1
 		${If} $R1 == "$AppDir\VSCode\Code.exe"
 			Sleep 1000
-			Goto CheckProcess
+			Goto CheckRunning
 		${EndIf}
 	${EndIf}
 !macroend
 */
 
 ${SegmentPostPrimary}
-	; PAF installer related leftovers
-	Delete "$AppDir\AppInfo\pac_installer_log.ini"
-	RMDir /r "$DataDir\PortableApps.comInstaller"
-	RMDir "$EXEDIR\Other\Source"
+	; RMDir: delete the folder only if it is empty
+	; RMDir /r: recursively delete the folder and everything inside it
 
 	; Live Share related leftovers
 	DeleteRegKey HKCR "vsls"
@@ -197,14 +225,17 @@ ${SegmentPostPrimary}
 	DeleteRegKey HKCU "Software\Classes\code.launcher.handler"
 	DeleteRegKey HKCU "Software\code.launcher"
 	DeleteRegValue HKCU "Software\RegisteredApplications" "code.launcher"
+	RMDir /r "$LOCALAPPDATA\IsolatedStorage"
 
 	; C/C++ related leftovers
 	RMDir /r "$LOCALAPPDATA\Microsoft\vscode-cpptools"
 
 	; Python related leftovers
 	RMDir /r "$PROFILE\.pylint.d"
+	RMDir /r "$PROFILE\.ipython"
+	RMDir /r "$PROFILE\.matplotlib"
 	RMDir /r "$LOCALAPPDATA\Jedi"
-	RMDir "$LOCALAPPDATA\pip\cache"
+	RMDir /r "$LOCALAPPDATA\pip\cache"
 	RMDir "$LOCALAPPDATA\pip"
 
 	; Java related leftovers

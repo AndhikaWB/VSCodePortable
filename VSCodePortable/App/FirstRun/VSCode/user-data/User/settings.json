@@ -1,12 +1,10 @@
 {
-    "telemetry.enableTelemetry": false,
-    "telemetry.enableCrashReporter": false,
-    "update.enableWindowsBackgroundUpdates": false,
     "update.mode": "none",
+    "telemetry.telemetryLevel": "off",
     "extensions.autoUpdate": false,
     "extensions.ignoreRecommendations": true,
     "workbench.enableExperiments": false,
     "workbench.settings.enableNaturalLanguageSearch": false,
-    "editor.minimap.renderCharacters": false,
-    "python.globalModuleInstallation": true
+    "editor.bracketPairColorization.enabled": true,
+    "editor.minimap.renderCharacters": false
 }
