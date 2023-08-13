@@ -1,1 +1,0 @@
-Download it from https://adoptopenjdk.net/releases.html

@@ -1,1 +1,0 @@
-Download it from https://github.com/brechtsanders/winlibs_mingw/releases/latest

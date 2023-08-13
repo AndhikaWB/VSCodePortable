@@ -18,9 +18,17 @@ Var PythonDir
 Var JavaDir
 Var NodeJSDir
 Var GolangDir
+Var RustDir
+
+Var GitHome
+Var PythonUser
+Var NodePrefix
+Var GolangPath
+Var RustCargoHome
+Var PlatformIOCore
 
 ${SegmentInit}
-	; Define various paths (hard code only)
+	; Define frequently accessed paths
 	; Will not be added as environment variables
 	StrCpy "$AppDir" "$EXEDIR\App"
 	StrCpy "$DataDir" "$EXEDIR\Data"
@@ -39,19 +47,21 @@ ${SegmentPre}
 	${SetEnvironmentVariablesPath} "PAL:LauncherDir" "$EXEDIR"
 	${SetEnvironmentVariablesPath} "PAL:LauncherPath" "$EXEPATH"
 	${SetEnvironmentVariablesPath} "PAL:LauncherFile" "$EXEFILE"
+	; PortableAppsDir is the parent folder of the launcher folder
 	${SetEnvironmentVariablesPath} "PAL:PortableAppsDir" "$PortableAppsDirectory"
 	${SetEnvironmentVariablesPath} "PAL:CommonFilesDir" "$PortableAppsDirectory\CommonFiles"
+
+	; "PATH" on a clean installation of Windows 11 (see below)
+	${SetEnvironmentVariablesPath} "__clean__" "$WINDIR\System32;$WINDIR;$WINDIR\System32\WindowsPowerShell\v1.0;$WINDIR\System32\OpenSSH"
 !macroend
 
 ${SegmentPreExec}
 	; Use custom "PATH" if provided in "VSCodePortable.ini"
+	; You can use "PATH=%__clean__%" to emulate a clean installation
 	${ReadUserConfig} "$BasePath" "PATH"
 	; Read "PATH" environment variable (from system) if not defined
 	${If} "$BasePath" == ""
 		ReadEnvStr "$BasePath" "PATH"
-	${ElseIf} "$BasePath" == "__clean__"
-		; Use "PATH=__clean__" to emulate clean Windows 11 installation
-		ReadEnvStr "$BasePath" "$WINDIR\System32;$WINDIR;$WINDIR\System32\WindowsPowerShell\v1.0\;$WINDIR\System32\OpenSSH\"
 	${EndIf}
 	ExpandEnvStrings "$BasePath" "$BasePath"
 
@@ -62,14 +72,27 @@ ${SegmentPreExec}
 	${ReadUserConfig} "$GitDir" "GIT"
 	ExpandEnvStrings "$GitDir" "$GitDir"
 	${If} ${FileExists} "$GitDir\cmd\git.exe"
-		; Change Git home directory (can be annoying but good for portability)
-		; You can workaround this by replacing cd with an alias (in .bashrc and .zshrc)
-		; Those files will automatically be set on first run, no need to do anything
-		CreateDirectory "$DataDir\misc\GitHome"
-		${SetEnvironmentVariablesPath} "HOME" "$DataDir\misc\GitHome"
+		; Change Git user's home directory (may affect MinGW and MSYS too)
+		; Useful if you like to mod your Git setup (e.g. installing Oh My Zsh)
+		; This will prevent config files from being saved to "%UserProfile%" folder
+		${ReadUserConfig} "$GitHome" "ChangeGitHomePath"
+		${If} "$GitHome" == "true"
+			CreateDirectory "$DataDir\misc\GitHome"
+			; The default is "%UserProfile%"
+			${SetEnvironmentVariablesPath} "HOME" "$DataDir\misc\GitHome"
+			; Also copy custom shell config files on first run (contains workaround for "cd" command)
+			; These files may be overwritten by Oh My Zsh, so you may need to add "cd" alias at the end of file manually
+			${IfNot} ${FileExists} "$DataDir\misc\GitHome\.bashrc"
+				CopyFiles /Silent "$DefaultDataDir\misc\GitHome\.bashrc" "$DataDir\misc\GitHome"
+			${EndIf}
+			${IfNot} ${FileExists} "$DataDir\misc\GitHome\.zshrc"
+				CopyFiles /Silent "$DefaultDataDir\misc\GitHome\.zshrc" "$DataDir\misc\GitHome"
+			${EndIf}
+		${EndIf}
 		${If} ${FileExists} "$GitDir\post-install.bat"
 			; Portable Git post installation
-			nsExec::Exec "$\"$CmdPath$\" /C $\"$\"$GitDir\post-install.bat$\"$\""
+			; Cmd crazily remove quotes so nesting it will be needed
+			nsExec::Exec '"$CmdPath" /C ""$GitDir\post-install.bat""'
 		${EndIf}
 		StrCpy "$ExtraPath" "$GitDir\cmd;$GitDir\usr\bin"
 	${EndIf}
@@ -81,18 +104,18 @@ ${SegmentPreExec}
 		StrCpy "$ExtraPath" "$ExtraPath;$MinGWDir\bin"
 	${EndIf}
 
-	; Python user packages will be installed in "Data\misc\Python" folder
-	; Packages installed globally are not affected by "PYTHONUSERBASE"
-	; Don't forget to recompile the launcher in case you reverted it
-
 	; Python
 	${ReadUserConfig} "$PythonDir" "PYTHON"
 	ExpandEnvStrings "$PythonDir" "$PythonDir"
 	${If} ${FileExists} "$PythonDir\python.exe"
-		; Change user base directory (for portability)
-		${SetEnvironmentVariablesPath} "PYTHONUSERBASE" "$DataDir\misc\Python"
+		${ReadUserConfig} "$PythonUser" "ChangePythonUserPath"
+		${If} "$PythonUser" == "true"
+			; Change Python user's base directory (the default is "%AppData%\Python")
+			; Will not affect globally installed packages (local user packages only)
+			${SetEnvironmentVariablesPath} "PYTHONUSERBASE" "$DataDir\misc\Python"
+		${EndIf}
 		; Get "scripts" directory and add it to "PATH"
-		nsExec::ExecToStack "$\"$PythonDir\python.exe$\" -m site --user-site"
+		nsExec::ExecToStack '"$PythonDir\python.exe" -m site --user-site'
 		Pop $R1
 		${If} $R1 == 0
 			Pop $R2
@@ -117,17 +140,20 @@ ${SegmentPreExec}
 		${SetEnvironmentVariablesPath} "JAVA_HOME" "$JavaDir"
 	${EndIf}
 
-	; For portable usage, you need to change Node.js "prefix" and "cache" path manually
-	; Please edit "npmrc" file or simply use "npm config set XXX YYY" command
-	; Feel free to open a pull request if you want to automate it
-	; No need to change anything if you don't need portability
-
 	; Node.js
 	${ReadUserConfig} "$NodeJSDir" "NODEJS"
 	ExpandEnvStrings "$NodeJSDir" "$NodeJSDir"
 	${If} ${FileExists} "$NodeJSDir\node.exe"
+		${ReadUserConfig} "$NodePrefix" "ChangeNodePrefixPath"
+		${If} "$NodePrefix" == "true"
+			; Force change Node.js user's prefix and cache path
+			; If not changed, the default is "%AppData%\npm" and "%AppData%\npm-cache"
+			; May be dangerous on shared computer, as it will write its config in "%UserProfile%\.npmrc"
+			nsExec::Exec '"$CmdPath" /C ""$NodeJSDir\npm.cmd" config set prefix "$DataDir\misc\NodeJS""'
+			nsExec::Exec '"$CmdPath" /C ""$NodeJSDir\npm.cmd" config set cache "$DataDir\misc\NodeJS\cache""'
+		${EndIf}
 		; Get prefix directory and add it to "PATH"
-		nsExec::ExecToStack "$\"$CmdPath$\" /C $\"$\"$NodeJSDir\npm.cmd$\"$\" config get prefix"
+		nsExec::ExecToStack '"$CmdPath" /C ""$NodeJSDir\npm.cmd" config get prefix"'
 		Pop $R1
 		${If} $R1 == 0
 			Pop $R2
@@ -142,7 +168,39 @@ ${SegmentPreExec}
 	ExpandEnvStrings "$GolangDir" "$GolangDir"
 	${If} ${FileExists} "$GolangDir\bin\go.exe"
 		StrCpy "$ExtraPath" "$ExtraPath;$GolangDir\bin"
-		${SetEnvironmentVariablesPath} "GOPATH" "$GolangDir"
+		${ReadUserConfig} "$GolangPath" "ChangeGolangPath"
+		${If} "$GolangPath" == "true"
+			; Change Golang path aka "GOPATH" (where it stores user packages)
+			; I think it's rarely used nowadays since Go introduced "modules"
+			; The default is "%UserProfile%\Go"
+			${SetEnvironmentVariablesPath} "GOPATH" "$DataDir\misc\Go"
+			; Just in case there is an executable file(s)
+			StrCpy "$ExtraPath" "$ExtraPath;$DataDir\misc\Go\bin"
+		${EndIf}
+	${EndIf}
+
+	; Rust
+	${ReadUserConfig} "$RustDir" "RUST"
+	ExpandEnvStrings "$RustDir" "$RustDir"
+	${If} ${FileExists} "$RustDir\bin\cargo.exe"
+	${AndIf} ${FileExists} "$RustDir\bin\rustc.exe"
+		StrCpy "$ExtraPath" "$ExtraPath;$RustDir\bin"
+		${ReadUserConfig} "$RustCargoHome" "ChangeRustCargoHome"
+		${If} "$RustCargoHome" == "true"
+			; Change Cargo (Rust package manager) home
+			; The default is "%UserProfile%\.cargo"
+			${SetEnvironmentVariablesPath} "CARGO_HOME" "$DataDir\misc\Rust\Cargo"
+			; Just in case there is an executable file(s)
+			StrCpy "$ExtraPath" "$ExtraPath;$DataDir\misc\Rust\Cargo\bin"
+		${EndIf}
+	${EndIf}
+
+	; PlatformIO
+	${ReadUserConfig} "$PlatformIOCore" "ChangePlatformIOCorePath"
+	${If} "$PlatformIOCore" == "true"
+		; Change PlatformIO core path (where it stores config files and SDKs)
+		; The default is "%UserProfile%\.platformio"
+		${SetEnvironmentVariablesPath} "PLATFORMIO_CORE_DIR" "$DataDir\misc\PlatformIO"
 	${EndIf}
 
 	; Prepend all valid environments onto the "PATH" environment variable
@@ -154,15 +212,7 @@ ${SegmentPreExec}
 	${If} $R1 < ${NSIS_MAX_STRLEN}
 		${SetEnvironmentVariablesPath} "PATH" "$ExtraPath;$BasePath"
 	${Else}
-		MessageBox MB_OK|MB_ICONEXCLAMATION "The modified $\"PATH$\" environment variable is too long, reverting to default as workaround."
-	${EndIf}
-
-	; Copy Git home config files (first run)
-	${IfNot} ${FileExists} "$DataDir\misc\GitHome\.bashrc"
-		CopyFiles /Silent "$DefaultDataDir\misc\GitHome\.bashrc" "$DataDir\misc\GitHome"
-	${EndIf}
-	${IfNot} ${FileExists} "$DataDir\misc\GitHome\.zshrc"
-		CopyFiles /Silent "$DefaultDataDir\misc\GitHome\.zshrc" "$DataDir\misc\GitHome"
+		MessageBox MB_OK|MB_ICONEXCLAMATION 'The modified "PATH" environment variable is too long, reverting to default as workaround.'
 	${EndIf}
 
 	; Copy default "user-data" folder (first run)
@@ -176,8 +226,8 @@ ${SegmentPreExec}
 		FindFirst $R1 $R2 "$DefaultDataDir\VSCode\extensions\*.vsix"
 		CheckFile:
 		${If} $R2 != ""
-			MessageBox MB_YESNO|MB_ICONQUESTION "Do you want to install $\"$R2$\"? It may take a while, please be patient." IDNO +2
-			ExecWait "$\"$CmdPath$\" /C $\"$\"$AppDir\VSCode\bin\code.cmd$\" --install-extension $\"$DefaultDataDir\VSCode\extensions\$R2$\"$\""
+			MessageBox MB_YESNO|MB_ICONQUESTION 'Do you want to install "$R2"? It may take a while, please be patient.' IDNO +2
+			ExecWait '"$CmdPath" /C ""$AppDir\VSCode\bin\code.cmd" --install-extension "$DefaultDataDir\VSCode\extensions\$R2""'
 			FindNext $R1 $R2
 			Goto CheckFile
 		${EndIf}
@@ -199,9 +249,9 @@ ${OverrideExecute}
 	Exec "$ExecString"
 	Sleep 5000
 
-	; Overwrite values written by VSCode on launch
-	WriteRegStr HKCR "vscode\shell\open\command" "" "$\"$EXEPATH$\" --open-url -- $\"%1$\""
-	WriteRegStr HKCU "Software\Classes\vscode\shell\open\command" "" "$\"$EXEPATH$\" --open-url -- $\"%1$\""
+	; Overwrite values written by VSCode at launch
+	WriteRegStr HKCR "vscode\shell\open\command" "" '"$EXEPATH" --open-url -- "%1"'
+	WriteRegStr HKCU "Software\Classes\vscode\shell\open\command" "" '"$EXEPATH" --open-url -- "%1"'
 
 	CheckRunning:
 	${If} ${ProcessExists} "Code.exe"
@@ -213,6 +263,10 @@ ${OverrideExecute}
 	${EndIf}
 !macroend
 */
+
+; You can also rename this segment to PostExecPrimary
+; Patch the "PortableApps.comLauncher.nsi" file to allow custom code
+; Uncomment the "${RunSegment} Custom" line if it isn't already
 
 ${SegmentPostPrimary}
 	; RMDir: delete the folder only if it is empty
@@ -236,6 +290,7 @@ ${SegmentPostPrimary}
 	RMDir /r "$PROFILE\.matplotlib"
 	RMDir /r "$LOCALAPPDATA\Jedi"
 	RMDir /r "$LOCALAPPDATA\pip\cache"
+	RMDir /r "$APPDATA\jupyter"
 	RMDir "$LOCALAPPDATA\pip"
 
 	; Java related leftovers
@@ -247,6 +302,17 @@ ${SegmentPostPrimary}
 	Delete "$PROFILE\.config\configstore\update-notifier-npm.json"
 	RMDir "$PROFILE\.config\configstore"
 	RMDir "$PROFILE\.config"
-	RMDir "$APPDATA\npm-cache"
+	RMDir /r "$APPDATA\npm-cache\_logs"
+	RMDir /r "$APPDATA\npm-cache"
 	RMDir "$APPDATA\npm"
+
+	; Golang related leftovers
+	RMDir /r "$LOCALAPPDATA\go-build"
+	RMDir /r "$LOCALAPPDATA\gopls"
+	RMDir /r "$LOCALAPPDATA\staticcheck"
+
+	; Rust related leftovers
+	Delete "$PROFILE\.cargo\.package-cache"
+	RMDir /r "$PROFILE\.cargo\registry"
+	RMDir "$PROFILE\.cargo"
 !macroend

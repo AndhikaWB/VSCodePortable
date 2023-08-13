@@ -1,1 +1,0 @@
-Download it from https://github.com/winpython/winpython/releases/latest
