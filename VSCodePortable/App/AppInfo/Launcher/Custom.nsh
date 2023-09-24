@@ -19,12 +19,20 @@ Var JavaDir
 Var NodeJSDir
 Var GolangDir
 Var RustDir
+Var AndroidStudioDir
+Var AndroidStudioExist
+Var AndroidSdkDir
+Var FlutterDir
+Var VSBuildToolsDir
 
 Var GitHome
 Var PythonUser
 Var NodePrefix
 Var GolangPath
 Var RustCargoHome
+Var AndroidUser
+Var AndroidGoogle
+Var DartPubCache
 Var PlatformIOCore
 
 ${SegmentInit}
@@ -77,16 +85,16 @@ ${SegmentPreExec}
 		; This will prevent config files from being saved to "%UserProfile%" folder
 		${ReadUserConfig} "$GitHome" "ChangeGitHomePath"
 		${If} "$GitHome" == "true"
-			CreateDirectory "$DataDir\misc\GitHome"
-			; The default is "%UserProfile%"
-			${SetEnvironmentVariablesPath} "HOME" "$DataDir\misc\GitHome"
+			CreateDirectory "$DataDir\misc\Git\home"
+			; If not set, will fallback to "%UserProfile%"
+			${SetEnvironmentVariablesPath} "HOME" "$DataDir\misc\Git\home"
 			; Also copy custom shell config files on first run (contains workaround for "cd" command)
 			; These files may be overwritten by Oh My Zsh, so you may need to add "cd" alias at the end of file manually
-			${IfNot} ${FileExists} "$DataDir\misc\GitHome\.bashrc"
-				CopyFiles /Silent "$DefaultDataDir\misc\GitHome\.bashrc" "$DataDir\misc\GitHome"
+			${IfNot} ${FileExists} "$DataDir\misc\Git\home\.bashrc"
+				CopyFiles /Silent "$DefaultDataDir\misc\Git\home\.bashrc" "$DataDir\misc\Git\home"
 			${EndIf}
-			${IfNot} ${FileExists} "$DataDir\misc\GitHome\.zshrc"
-				CopyFiles /Silent "$DefaultDataDir\misc\GitHome\.zshrc" "$DataDir\misc\GitHome"
+			${IfNot} ${FileExists} "$DataDir\misc\Git\home\.zshrc"
+				CopyFiles /Silent "$DefaultDataDir\misc\Git\home\.zshrc" "$DataDir\misc\Git\home"
 			${EndIf}
 		${EndIf}
 		${If} ${FileExists} "$GitDir\post-install.bat"
@@ -94,7 +102,8 @@ ${SegmentPreExec}
 			; Cmd crazily remove quotes so nesting it will be needed
 			nsExec::Exec '"$CmdPath" /C ""$GitDir\post-install.bat""'
 		${EndIf}
-		StrCpy "$ExtraPath" "$GitDir\cmd;$GitDir\usr\bin"
+		; Initial value to be added to "PATH"
+		StrCpy "$ExtraPath" "$GitDir\bin;$GitDir\cmd"
 	${EndIf}
 
 	; MinGW (GCC)
@@ -114,7 +123,7 @@ ${SegmentPreExec}
 			; Will not affect globally installed packages (local user packages only)
 			${SetEnvironmentVariablesPath} "PYTHONUSERBASE" "$DataDir\misc\Python"
 		${EndIf}
-		; Get "scripts" directory and add it to "PATH"
+		; Get user "scripts" directory and add it to "PATH"
 		nsExec::ExecToStack '"$PythonDir\python.exe" -m site --user-site'
 		Pop $R1
 		${If} $R1 == 0
@@ -149,8 +158,8 @@ ${SegmentPreExec}
 			; Force change Node.js user's prefix and cache path
 			; If not changed, the default is "%AppData%\npm" and "%AppData%\npm-cache"
 			; May be dangerous on shared computer, as it will write its config in "%UserProfile%\.npmrc"
-			nsExec::Exec '"$CmdPath" /C ""$NodeJSDir\npm.cmd" config set prefix "$DataDir\misc\NodeJS""'
-			nsExec::Exec '"$CmdPath" /C ""$NodeJSDir\npm.cmd" config set cache "$DataDir\misc\NodeJS\cache""'
+			nsExec::Exec '"$CmdPath" /C ""$NodeJSDir\npm.cmd" config set prefix "$DataDir\misc\Node.js\npm""'
+			nsExec::Exec '"$CmdPath" /C ""$NodeJSDir\npm.cmd" config set cache "$DataDir\misc\Node.js\npm-cache""'
 		${EndIf}
 		; Get prefix directory and add it to "PATH"
 		nsExec::ExecToStack '"$CmdPath" /C ""$NodeJSDir\npm.cmd" config get prefix"'
@@ -171,7 +180,7 @@ ${SegmentPreExec}
 		${ReadUserConfig} "$GolangPath" "ChangeGolangPath"
 		${If} "$GolangPath" == "true"
 			; Change Golang path aka "GOPATH" (where it stores user packages)
-			; I think it's rarely used nowadays since Go introduced "modules"
+			; It's rarely used nowadays since Go introduced "modules"
 			; The default is "%UserProfile%\Go"
 			${SetEnvironmentVariablesPath} "GOPATH" "$DataDir\misc\Go"
 			; Just in case there is an executable file(s)
@@ -189,9 +198,95 @@ ${SegmentPreExec}
 		${If} "$RustCargoHome" == "true"
 			; Change Cargo (Rust package manager) home
 			; The default is "%UserProfile%\.cargo"
-			${SetEnvironmentVariablesPath} "CARGO_HOME" "$DataDir\misc\Rust\Cargo"
+			${SetEnvironmentVariablesPath} "CARGO_HOME" "$DataDir\misc\Rust\.cargo"
 			; Just in case there is an executable file(s)
-			StrCpy "$ExtraPath" "$ExtraPath;$DataDir\misc\Rust\Cargo\bin"
+			StrCpy "$ExtraPath" "$ExtraPath;$DataDir\misc\Rust\.cargo\bin"
+		${EndIf}
+	${EndIf}
+
+	; Android Studio/SDK behavior is buggy, at least on Windows
+	; It will ignore environment variables so simple portablization attempt will not work
+	; https://stackoverflow.com/questions/28777414/how-to-get-android-studio-to-not-use-default-folders
+	; https://github.com/portapps/android-studio-portable/blob/master/main.go
+
+	; As a quick and dirty workaround, junction/symlink will also be created (NTFS only, won't work on FAT)
+	; If you intent to use Android Studio Portable (by PortApps), please comment/empty the "ANDROID_SDK" path
+	; Otherwise, the created junction/symlink may cause undesirable behavior
+	; Junction/symlink won't replace a folder if it already exist, though
+
+	; Android Studio
+	${ReadUserConfig} "$AndroidStudioDir" "ANDROID_STUDIO"
+	ExpandEnvStrings "$AndroidStudioDir" "$AndroidStudioDir"
+	${If} ${FileExists} "$AndroidStudioDir\bin\studio*.exe"
+		; Add Android Studio to "PATH"
+		StrCpy "$ExtraPath" "$ExtraPath;$AndroidStudioDir\bin"
+		StrCpy "$AndroidStudioExist" "true"
+		; Move Android Studio config folder location
+		; The default is "Google\AndroidStudio*" in "%AppData%" and "%LocalAppData%"
+		${ReadUserConfig} "$AndroidGoogle" "ChangeAndroidStudioConfig"
+		${If} "$AndroidGoogle" == "true"
+			; Create junction/symlink for Android Studio config folder
+			CreateDirectory "$DataDir\misc\Android\Google\Local"
+			nsExec::Exec '"$CmdPath" /C "mklink /J "$LOCALAPPDATA\Google" "$DataDir\misc\Android\Google\Local""'
+			CreateDirectory "$DataDir\misc\Android\Google\Roaming"
+			nsExec::Exec '"$CmdPath" /C "mklink /J "$APPDATA\Google" "$DataDir\misc\Android\Google\Roaming""'
+		${EndIf}
+	${EndIf}
+
+	; Android SDK (see known issue from comments above)
+	${ReadUserConfig} "$AndroidSdkDir" "ANDROID_SDK"
+	ExpandEnvStrings "$AndroidSdkDir" "$AndroidSdkDir"
+	; SDK must already exist if using standalone SDK
+	; Can be downloaded later if using Android Studio
+	${If} ${FileExists} "$AndroidSdkDir\*.*"
+	${OrIf} "$AndroidStudioExist" == "true"
+		; Create SDK directory if using Android Studio
+		CreateDirectory "$AndroidSdkDir"
+		; Set Android SDK path
+		; https://developer.android.com/tools/variables
+		${SetEnvironmentVariablesPath} "ANDROID_HOME" "$AndroidSdkDir"
+		StrCpy "$ExtraPath" "$ExtraPath;$AndroidSdkDir\tools;$AndroidSdkDir\tools\bin;$AndroidSdkDir\platform-tools"
+		; Create junction/symlink for Android SDK
+		CreateDirectory "$LOCALAPPDATA\Android"
+		nsExec::Exec '"$CmdPath" /C "mklink /J "$LOCALAPPDATA\Android\Sdk" "$AndroidSdkDir""'
+		; Move Android related folders from "%UserProfile%" to "Data\misc\Android"
+		${ReadUserConfig} "$AndroidUser" "ChangeAndroidUserPath"
+		${If} "$AndroidUser" == "true"
+			${SetEnvironmentVariablesPath} "ANDROID_USER_HOME" "$DataDir\misc\Android\.android"
+			${SetEnvironmentVariablesPath} "GRADLE_USER_HOME" "$DataDir\misc\Android\.gradle"
+			; Create junction/symlink for above directories
+			CreateDirectory "$DataDir\misc\Android\.android"
+			nsExec::Exec '"$CmdPath" /C "mklink /J "$PROFILE\.android" "$DataDir\misc\Android\.android""'
+			CreateDirectory "$DataDir\misc\Android\.gradle"
+			nsExec::Exec '"$CmdPath" /C "mklink /J "$PROFILE\.gradle" "$DataDir\misc\Android\.gradle""'
+		${EndIf}
+	${EndIf}
+
+	; Flutter (Dart)
+	${ReadUserConfig} "$FlutterDir" "FLUTTER"
+	ExpandEnvStrings "$FlutterDir" "$FlutterDir"
+	; Just check for Dart as Flutter uses it too
+	${If} ${FileExists} "$FlutterDir\bin\dart*"
+		StrCpy "$ExtraPath" "$ExtraPath;$FlutterDir\bin"
+		; Use our own Git instead of Flutter built-in Git
+		; Removing it will save at least 150 MB of space
+		RMDir /r "$FlutterDir\bin\mingit"
+		; Disable telemetry and analytics (may not work if Git is not detected)
+		; Execute these commands directly on VS Code terminal just to be sure
+		nsExec::Exec '"$CmdPath" /C ""$FlutterDir\flutter" config --no-analytics"'
+		nsExec::Exec '"$CmdPath" /C ""$FlutterDir\flutter" --disable-telemetry"'
+		nsExec::Exec '"$CmdPath" /C ""$FlutterDir\dart" --disable-analytics"'
+		nsExec::Exec '"$CmdPath" /C ""$FlutterDir\dart" --disable-telemetry"'
+		; Also configure Android Studio path if exist
+		${If} "$AndroidStudioExist" == "true"
+			nsExec::Exec '"$CmdPath" /C ""$FlutterDir\flutter" config --android-studio-dir="$AndroidStudioDir""'
+		${EndIf}
+		; Package manager
+		${ReadUserConfig} "$DartPubCache" "ChangeDartPubCache"
+		${If} "$DartPubCache" == "true"
+			; Change Dart Pub (package manager) cache location
+			; The default is "%LocalAppData%\Pub\Cache"
+			${SetEnvironmentVariablesPath} "PUB_CACHE" "$DataDir\misc\Dart\Pub\Cache"
 		${EndIf}
 	${EndIf}
 
@@ -249,7 +344,7 @@ ${OverrideExecute}
 	Exec "$ExecString"
 	Sleep 5000
 
-	; Overwrite values written by VSCode at launch
+	; Rewrite values overwritten by VSCode at launch
 	WriteRegStr HKCR "vscode\shell\open\command" "" '"$EXEPATH" --open-url -- "%1"'
 	WriteRegStr HKCU "Software\Classes\vscode\shell\open\command" "" '"$EXEPATH" --open-url -- "%1"'
 
@@ -263,10 +358,6 @@ ${OverrideExecute}
 	${EndIf}
 !macroend
 */
-
-; You can also rename this segment to PostExecPrimary
-; Patch the "PortableApps.comLauncher.nsi" file to allow custom code
-; Uncomment the "${RunSegment} Custom" line if it isn't already
 
 ${SegmentPostPrimary}
 	; RMDir: delete the folder only if it is empty
@@ -294,6 +385,7 @@ ${SegmentPostPrimary}
 	RMDir "$LOCALAPPDATA\pip"
 
 	; Java related leftovers
+	DeleteRegKey HKCU "Software\JavaSoft"
 	Delete "$PROFILE\.tooling\gradle\versions.json"
 	RMDir "$PROFILE\.tooling\gradle"
 	RMDir "$PROFILE\.tooling"
@@ -315,4 +407,24 @@ ${SegmentPostPrimary}
 	Delete "$PROFILE\.cargo\.package-cache"
 	RMDir /r "$PROFILE\.cargo\registry"
 	RMDir "$PROFILE\.cargo"
+
+	; Android Studio/SDK related leftovers
+	; Junction/symlink must be safely removed using cmd
+	nsExec::Exec '"$CmdPath" /C "rmdir "$PROFILE\.android""'
+	nsExec::Exec '"$CmdPath" /C "rmdir "$PROFILE\.gradle""'
+	nsExec::Exec '"$CmdPath" /C "rmdir "$APPDATA\Google""'
+	nsExec::Exec '"$CmdPath" /C "rmdir "$LOCALAPPDATA\Google""'
+	nsExec::Exec '"$CmdPath" /C "rmdir "$LOCALAPPDATA\Android\Sdk""'
+	DeleteRegKey HKCU "Software\JavaSoft\Android Open Source Project"
+	RMDir "$LOCALAPPDATA\Android"
+	RMDir /r "$LOCALAPPDATA\Android Open Source Project"
+	RMDir /r "$LOCALAPPDATA\kotlin"
+	Delete "$PROFILE\.emulator_console_auth_token"
+
+	; Flutter (Dart) related leftovers
+	RMDir /r "$APPDATA\.dart-tool"
+	RMDir /r "$APPDATA\.dart"
+	RMDir /r "$LOCALAPPDATA\.dartServer"
+	RMDir /r "$LOCALAPPDATA\Pub\Cache"
+	RMDir "$LOCALAPPDATA\Pub"
 !macroend

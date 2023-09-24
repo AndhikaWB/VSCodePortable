@@ -8,13 +8,13 @@ Visual Studio Code in [PortableApps.com](https://portableapps.com/) format (unof
 
 Native portable mode can still leave some traces on the system and registry (created by extensions and development environments). Moreover, you still need to add your (portable) development environments to `PATH` manually and sometimes, this process is tiring, especially if you want to set them up on multiple computers or need to change the `PATH` oftenly.
 
-With VSCodePortable, you can just pack your development environments together (along with VSCodePortable), copy them to flash drive, and run them again on different computer without needing to setup them again (see below for more details).
+With VSCodePortable, you can just pack your development environments together (along with VSCodePortable), copy them to flash drive, and run them again on different computer without needing to set up them again (see below for more details).
 
 ### What are the differences compared to native portable mode?
 
 * All known traces (on the system and registry) will be removed automatically after run. Including some traces left by extensions and development environments. Check `VSCodePortable.ini` and `Custom.nsh` file in `App\AppInfo\Launcher` folder for more details.
 * Support some popular development environments (see below), they will be added to `PATH` automatically during runtime. Only affects `Code.exe` and processes run by it, your real `PATH` environment variable will stay untouched. You can specify their location by modifying `VSCodePortable.ini` file in root directory (appears only after the first run).
-* Added context menu items (e.g. `Open with Code`) just like the non-portable version. Will be removed automatically after you close Visual Studio Code (please don't shutdown your system directly, close VSCodePortable first).
+* Added context menu items (e.g. `Open with Code`) just like the non-portable version. Will be removed automatically after you close Visual Studio Code (please don't shut down your system directly, close VSCodePortable first).
 * Can auto-install VSIX files located in `App\FirstRun\VSCode\extensions` folder on first run. Be aware that some extensions require other extension as dependency, you can add number in front of the file name because they will be installed in descending order.
 * Disabled telemetry and auto-update (via `settings.json`)
 
@@ -27,9 +27,9 @@ As far as I know, Flower's version has similar behavior compared to native porta
 VSCodium is not allowed to use any [proprietary debugging tools](https://github.com/VSCodium/vscodium/blob/master/DOCS.md#proprietary-debugging-tools) made by Microsoft, including those that are embedded on extensions like [C/C++ extension](https://github.com/Microsoft/vscode-cpptools/issues/21#issuecomment-248349017), and many more. It seems that there is [workaround](https://aur.archlinux.org/packages/vscodium-bin-marketplace) but I don't have a clean way to modify and support it right now (feel free to open PR). I do use VSCodium on Linux though.
 
 ### Which development environments are supported?
-For now it supports Git, MinGW (GCC), Python, Java, Node.js, Go, Rust, and PlatformIO. You can enable optional modification for each DE via `VSCodePortable.ini` (on the launcher root directory).
+For now it supports Git, MinGW (GCC), Python, Java, Node.js, Go, Rust, Flutter, Android Studio, Android SDK, and PlatformIO. Visual Studio build tools support is also (partially) supported, see my other repo ([BuildToolsInspector](https://github.com/AndhikaWB/BuildToolsInspector)). You can enable optional modification for each DE via `VSCodePortable.ini` (on the launcher root directory).
 
-When updating VSCodePortable from the [release](https://github.com/AndhikaWB/VSCodePortable/releases) page, please compare the previous file with `App\FirstRun\VSCodePortable.ini` in case I added support for new feature(s) since the existing config file will not be replaced automatically. Sorry for the inconvenience.
+When updating VSCodePortable from the [release](https://github.com/AndhikaWB/VSCodePortable/releases) page, please compare the previously mentioned file with `App\FirstRun\VSCodePortable.ini` in case I added support for new feature(s) since the existing config file will not be replaced automatically. Sorry for the inconvenience.
 
 ### Will XXX development environment be supported?
 Open an issue or pull request and I will see what I can do.
@@ -64,7 +64,7 @@ Required to be able to recognize your (portable) development environments.
 3. Open `VSCodePortable.ini` by using any text editor
 4. Look out for the `[Environment]` section and change `PATH` value
 5. To append original system `PATH`, use something like `PATH=%PATH%;<path_to_your_de>`. You can also use `PATH=__clean__` to emulate `PATH` on clean Windows install
-6. (Optional) if the development environment checks for specific environment variable (e.g. `XXX_HOME`, `XXXPATH`), navigate to `D:\Apps\VSCodePortable\App\AppInfo\Launcher` and open `VSCodePortable.ini` file. Add new `[Environment]` section (if it doesn't exist) and write the needed environment variable (e.g. `XXX_HOME=D:\Apps\VSCodePortable\App\XXX`) under that section
+6. (Optional) if the development environment checks for specific environment variable (e.g. `XXX_HOME`, `XXXPATH`), navigate to `D:\Apps\VSCodePortable\App\AppInfo\Launcher` and open `VSCodePortable.ini` file. Add new `[Environment]` section (if it doesn't exist) and write the needed environment variable (e.g. `XXX_HOME=D:\Apps\CommonFiles\XXX`) under that section
 7. To check if your environment variable is recognized, type `echo %PATH%` (Command Prompt) or `echo $PATH` (Bash) or `$env:PATH` (PowerShell) inside Visual Studio Code terminal. Replace `PATH` with other variable name depending on your use case
 
 **Note:** There are at least 3 different `VSCodePortable.ini` files! Usually you only need to look the one located in launcher root directory.
