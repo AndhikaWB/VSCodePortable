@@ -8,9 +8,11 @@ Var DataDir
 Var DefaultDataDir
 Var VSCodeDataDir
 
-Var CmdPath
 Var BasePath
 Var ExtraPath
+
+Var CmdPath
+Var PythonPath
 
 Var GitDir
 Var MinGWDir
@@ -23,7 +25,7 @@ Var AndroidStudioDir
 Var AndroidStudioExist
 Var AndroidSdkDir
 Var FlutterDir
-Var VSBuildToolsDir
+Var SparkDir
 
 Var GitHome
 Var PythonUser
@@ -86,10 +88,10 @@ ${SegmentPreExec}
 		${ReadUserConfig} "$GitHome" "ChangeGitHomePath"
 		${If} "$GitHome" == "true"
 			CreateDirectory "$DataDir\misc\Git\home"
-			; If not set, will fallback to "%UserProfile%"
+			; If not set, the default is "%UserProfile%"
 			${SetEnvironmentVariablesPath} "HOME" "$DataDir\misc\Git\home"
 			; Also copy custom shell config files on first run (contains workaround for "cd" command)
-			; These files may be overwritten by Oh My Zsh, so you may need to add "cd" alias at the end of file manually
+			; These files may be overwritten by Oh My Zsh, so you may need to re-add the "cd" alias manually
 			${IfNot} ${FileExists} "$DataDir\misc\Git\home\.bashrc"
 				CopyFiles /Silent "$DefaultDataDir\misc\Git\home\.bashrc" "$DataDir\misc\Git\home"
 			${EndIf}
@@ -133,11 +135,11 @@ ${SegmentPreExec}
 		${Else}
 			StrCpy "$ExtraPath" "$ExtraPath;$PythonDir;$PythonDir\scripts"
 		${EndIf}
-		ExpandEnvStrings $R3 "%PYTHONPATH%"
-		${If} $R3 == ""
-			${SetEnvironmentVariablesPath} "PYTHONPATH" "$PythonDir\lib;$PythonDir\dlls"
+		ExpandEnvStrings "$PythonPath" "%PYTHONPATH%"
+		${If} "$PythonPath" == ""
+			StrCpy "$PythonPath" "$PythonDir\lib;$PythonDir\dlls"
 		${Else}
-			${SetEnvironmentVariablesPath} "PYTHONPATH" "$PythonDir\lib;$PythonDir\dlls;$R3"
+			StrCpy "$PythonPath" "$PythonDir\lib;$PythonDir\dlls;$PythonPath"
 		${EndIf}
 	${EndIf}
 
@@ -157,7 +159,7 @@ ${SegmentPreExec}
 		${If} "$NodePrefix" == "true"
 			; Force change Node.js user's prefix and cache path
 			; If not changed, the default is "%AppData%\npm" and "%AppData%\npm-cache"
-			; May be dangerous on shared computer, as it will write its config in "%UserProfile%\.npmrc"
+			; May be dangerous on shared computer, as it will write its config to "%UserProfile%\.npmrc"
 			nsExec::Exec '"$CmdPath" /C ""$NodeJSDir\npm.cmd" config set prefix "$DataDir\misc\Node.js\npm""'
 			nsExec::Exec '"$CmdPath" /C ""$NodeJSDir\npm.cmd" config set cache "$DataDir\misc\Node.js\npm-cache""'
 		${EndIf}
@@ -166,6 +168,9 @@ ${SegmentPreExec}
 		Pop $R1
 		${If} $R1 == 0
 			Pop $R2
+			; Trim trailing newline from npm output
+			; This will break cmd if left untouched
+			${TrimNewLines} $R2 $R2
 			StrCpy "$ExtraPath" "$ExtraPath;$NodeJSDir;$R2"
 		${Else}
 			StrCpy "$ExtraPath" "$ExtraPath;$NodeJSDir"
@@ -191,6 +196,9 @@ ${SegmentPreExec}
 	; Rust
 	${ReadUserConfig} "$RustDir" "RUST"
 	ExpandEnvStrings "$RustDir" "$RustDir"
+	; Based on the standalone version, not using Rustup
+	; For issue regarding rust-src, see the solution from link below
+	; https://github.com/rust-lang/rust-analyzer/issues/4172#issuecomment-1664348160
 	${If} ${FileExists} "$RustDir\bin\cargo.exe"
 	${AndIf} ${FileExists} "$RustDir\bin\rustc.exe"
 		StrCpy "$ExtraPath" "$ExtraPath;$RustDir\bin"
@@ -210,7 +218,7 @@ ${SegmentPreExec}
 	; https://github.com/portapps/android-studio-portable/blob/master/main.go
 
 	; As a quick and dirty workaround, junction/symlink will also be created (NTFS only, won't work on FAT)
-	; If you intent to use Android Studio Portable (by PortApps), please comment/empty the "ANDROID_SDK" path
+	; If you want to use Android Studio Portable (by PortApps), empty the "ANDROID_SDK" path on "VSCodePortable.ini"
 	; Otherwise, the created junction/symlink may cause undesirable behavior
 	; Junction/symlink won't replace a folder if it already exist, though
 
@@ -240,25 +248,27 @@ ${SegmentPreExec}
 	; Can be downloaded later if using Android Studio
 	${If} ${FileExists} "$AndroidSdkDir\*.*"
 	${OrIf} "$AndroidStudioExist" == "true"
-		; Create SDK directory if using Android Studio
-		CreateDirectory "$AndroidSdkDir"
-		; Set Android SDK path
-		; https://developer.android.com/tools/variables
-		${SetEnvironmentVariablesPath} "ANDROID_HOME" "$AndroidSdkDir"
-		StrCpy "$ExtraPath" "$ExtraPath;$AndroidSdkDir\tools;$AndroidSdkDir\tools\bin;$AndroidSdkDir\platform-tools"
-		; Create junction/symlink for Android SDK
-		CreateDirectory "$LOCALAPPDATA\Android"
-		nsExec::Exec '"$CmdPath" /C "mklink /J "$LOCALAPPDATA\Android\Sdk" "$AndroidSdkDir""'
-		; Move Android related folders from "%UserProfile%" to "Data\misc\Android"
-		${ReadUserConfig} "$AndroidUser" "ChangeAndroidUserPath"
-		${If} "$AndroidUser" == "true"
-			${SetEnvironmentVariablesPath} "ANDROID_USER_HOME" "$DataDir\misc\Android\.android"
-			${SetEnvironmentVariablesPath} "GRADLE_USER_HOME" "$DataDir\misc\Android\.gradle"
-			; Create junction/symlink for above directories
-			CreateDirectory "$DataDir\misc\Android\.android"
-			nsExec::Exec '"$CmdPath" /C "mklink /J "$PROFILE\.android" "$DataDir\misc\Android\.android""'
-			CreateDirectory "$DataDir\misc\Android\.gradle"
-			nsExec::Exec '"$CmdPath" /C "mklink /J "$PROFILE\.gradle" "$DataDir\misc\Android\.gradle""'
+		${If} "$AndroidSdkDir" != ""
+			; Create SDK directory if using Android Studio
+			CreateDirectory "$AndroidSdkDir"
+			; Set Android SDK path
+			; https://developer.android.com/tools/variables
+			${SetEnvironmentVariablesPath} "ANDROID_HOME" "$AndroidSdkDir"
+			StrCpy "$ExtraPath" "$ExtraPath;$AndroidSdkDir\tools;$AndroidSdkDir\tools\bin;$AndroidSdkDir\platform-tools"
+			; Create junction/symlink for Android SDK
+			CreateDirectory "$LOCALAPPDATA\Android"
+			nsExec::Exec '"$CmdPath" /C "mklink /J "$LOCALAPPDATA\Android\Sdk" "$AndroidSdkDir""'
+			; Move Android related folders from "%UserProfile%" to "Data\misc\Android"
+			${ReadUserConfig} "$AndroidUser" "ChangeAndroidUserPath"
+			${If} "$AndroidUser" == "true"
+				${SetEnvironmentVariablesPath} "ANDROID_USER_HOME" "$DataDir\misc\Android\.android"
+				${SetEnvironmentVariablesPath} "GRADLE_USER_HOME" "$DataDir\misc\Android\.gradle"
+				; Create junction/symlink for above directories
+				CreateDirectory "$DataDir\misc\Android\.android"
+				nsExec::Exec '"$CmdPath" /C "mklink /J "$PROFILE\.android" "$DataDir\misc\Android\.android""'
+				CreateDirectory "$DataDir\misc\Android\.gradle"
+				nsExec::Exec '"$CmdPath" /C "mklink /J "$PROFILE\.gradle" "$DataDir\misc\Android\.gradle""'
+			${EndIf}
 		${EndIf}
 	${EndIf}
 
@@ -268,15 +278,15 @@ ${SegmentPreExec}
 	; Just check for Dart as Flutter uses it too
 	${If} ${FileExists} "$FlutterDir\bin\dart*"
 		StrCpy "$ExtraPath" "$ExtraPath;$FlutterDir\bin"
-		; Use our own Git instead of Flutter built-in Git
-		; Removing it will save at least 150 MB of space
-		RMDir /r "$FlutterDir\bin\mingit"
-		; Disable telemetry and analytics (may not work if Git is not detected)
+		; Disable telemetry and analytics (may not work if there's no Git)
 		; Execute these commands directly on VS Code terminal just to be sure
 		nsExec::Exec '"$CmdPath" /C ""$FlutterDir\flutter" config --no-analytics"'
 		nsExec::Exec '"$CmdPath" /C ""$FlutterDir\flutter" --disable-telemetry"'
 		nsExec::Exec '"$CmdPath" /C ""$FlutterDir\dart" --disable-analytics"'
 		nsExec::Exec '"$CmdPath" /C ""$FlutterDir\dart" --disable-telemetry"'
+		; Use our own Git instead of Flutter built-in Git
+		; Removing it will save at least 150 MB of space
+		RMDir /r "$FlutterDir\bin\mingit"
 		; Also configure Android Studio path if exist
 		${If} "$AndroidStudioExist" == "true"
 			nsExec::Exec '"$CmdPath" /C ""$FlutterDir\flutter" config --android-studio-dir="$AndroidStudioDir""'
@@ -287,6 +297,31 @@ ${SegmentPreExec}
 			; Change Dart Pub (package manager) cache location
 			; The default is "%LocalAppData%\Pub\Cache"
 			${SetEnvironmentVariablesPath} "PUB_CACHE" "$DataDir\misc\Dart\Pub\Cache"
+		${EndIf}
+	${EndIf}
+
+	; Apache Spark
+	${ReadUserConfig} "$SparkDir" "SPARK"
+	ExpandEnvStrings "$SparkDir" "$SparkDir"
+	${If} ${FileExists} "$SparkDir\bin\spark-shell*"
+		; Simple support without Hadoop and Hive
+		; If you need full support, install in Linux instead
+		${SetEnvironmentVariablesPath} "SPARK_HOME" "$SparkDir"
+		StrCpy "$ExtraPath" "$ExtraPath;$SparkDir\bin;$SparkDir\sbin"
+		; Add Spark libraries to "PYTHONPATH", no need to install PySpark
+		; However, when loading from zip, you can't debug the library source code
+		${If} ${FileExists} "$SparkDir\python\lib\*.*"
+			; Prioritize the non-zipped libraries first
+			StrCpy "$PythonPath" "$PythonPath;$SparkDir\python"
+			; Add the zipped libraries after that
+			FindFirst $R1 $R2 "$SparkDir\python\lib\*.zip"
+			CheckSparkLib:
+			${If} $R2 != ""
+				StrCpy "$PythonPath" "$PythonPath;$SparkDir\python\lib\$R2"
+				FindNext $R1 $R2
+				Goto CheckSparkLib
+			${EndIf}
+			FindClose $R1
 		${EndIf}
 	${EndIf}
 
@@ -310,6 +345,9 @@ ${SegmentPreExec}
 		MessageBox MB_OK|MB_ICONEXCLAMATION 'The modified "PATH" environment variable is too long, reverting to default as workaround.'
 	${EndIf}
 
+	; Set or modify "PYTHONPATH"
+	${SetEnvironmentVariablesPath} "PYTHONPATH" "$PythonPath"
+
 	; Copy default "user-data" folder (first run)
 	CreateDirectory "$VSCodeDataDir"
 	${IfNot} ${FileExists} "$VSCodeDataDir\user-data\*.*"
@@ -319,12 +357,12 @@ ${SegmentPreExec}
 	; Install bundled VSIX files to "extensions" folder (first run)
 	${IfNot} ${FileExists} "$VSCodeDataDir\extensions\*.*"
 		FindFirst $R1 $R2 "$DefaultDataDir\VSCode\extensions\*.vsix"
-		CheckFile:
+		CheckVsix:
 		${If} $R2 != ""
 			MessageBox MB_YESNO|MB_ICONQUESTION 'Do you want to install "$R2"? It may take a while, please be patient.' IDNO +2
 			ExecWait '"$CmdPath" /C ""$AppDir\VSCode\bin\code.cmd" --install-extension "$DefaultDataDir\VSCode\extensions\$R2""'
 			FindNext $R1 $R2
-			Goto CheckFile
+			Goto CheckVsix
 		${EndIf}
 		FindClose $R1
 	${EndIf}

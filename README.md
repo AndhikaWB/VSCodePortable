@@ -24,12 +24,12 @@ As far as I know, Flower's version has similar behavior compared to native porta
 
 ### Why not use VSCodium as the base instead?
 
-VSCodium is not allowed to use any [proprietary debugging tools](https://github.com/VSCodium/vscodium/blob/master/DOCS.md#proprietary-debugging-tools) made by Microsoft, including those that are embedded on extensions like [C/C++ extension](https://github.com/Microsoft/vscode-cpptools/issues/21#issuecomment-248349017), and many more. It seems that there is [workaround](https://aur.archlinux.org/packages/vscodium-bin-marketplace) but I don't have a clean way to modify and support it right now (feel free to open PR). I do use VSCodium on Linux though.
+VSCodium is not allowed to use any [proprietary debugging tools](https://github.com/VSCodium/vscodium/blob/master/DOCS.md#proprietary-debugging-tools) made by Microsoft, including those that are embedded on extensions like [C/C++ extension](https://github.com/Microsoft/vscode-cpptools/issues/21#issuecomment-248349017), and many more. It seems that there is [workaround](https://aur.archlinux.org/packages/vscodium-bin-marketplace), but I don't have a clean way to modify and support it right now (feel free to open PR). Moreover, some extensions still doesn't work properly even after using that patch.
 
 ### Which development environments are supported?
-For now it supports Git, MinGW (GCC), Python, Java, Node.js, Go, Rust, Flutter, Android Studio, Android SDK, and PlatformIO. Visual Studio build tools support is also (partially) supported, see my other repo ([BuildToolsInspector](https://github.com/AndhikaWB/BuildToolsInspector)). You can enable optional modification for each DE via `VSCodePortable.ini` (on the launcher root directory).
+It supports Git, MinGW (GCC), Python, Java, Node.js, Go, Rust, Flutter, Android Studio, Android SDK, Apache Spark, and PlatformIO. Visual Studio build tools support is also (partially) supported, see my other repo ([BuildToolsInspector](https://github.com/AndhikaWB/BuildToolsInspector)). You can enable optional modification(s) for each DE via `VSCodePortable.ini` (on the launcher root directory).
 
-When updating VSCodePortable from the [release](https://github.com/AndhikaWB/VSCodePortable/releases) page, please compare the previously mentioned file with `App\FirstRun\VSCodePortable.ini` in case I added support for new feature(s) since the existing config file will not be replaced automatically. Sorry for the inconvenience.
+When updating VSCodePortable from the [release](https://github.com/AndhikaWB/VSCodePortable/releases) page, please compare the previously mentioned file with `App\FirstRun\VSCodePortable.ini` in case I added support for new feature(s), since the existing config file will not be replaced automatically. Sorry for the inconvenience.
 
 ### Will XXX development environment be supported?
 Open an issue or pull request and I will see what I can do.
@@ -67,7 +67,7 @@ Required to be able to recognize your (portable) development environments.
 6. (Optional) if the development environment checks for specific environment variable (e.g. `XXX_HOME`, `XXXPATH`), navigate to `D:\Apps\VSCodePortable\App\AppInfo\Launcher` and open `VSCodePortable.ini` file. Add new `[Environment]` section (if it doesn't exist) and write the needed environment variable (e.g. `XXX_HOME=D:\Apps\CommonFiles\XXX`) under that section
 7. To check if your environment variable is recognized, type `echo %PATH%` (Command Prompt) or `echo $PATH` (Bash) or `$env:PATH` (PowerShell) inside Visual Studio Code terminal. Replace `PATH` with other variable name depending on your use case
 
-**Note:** There are at least 3 different `VSCodePortable.ini` files! Usually you only need to look the one located in launcher root directory.
+**Note:** There are at least 3 different `VSCodePortable.ini` files! Usually you only need to look the one located in launcher root directory. However, check the instruction again and make sure you modify the correct one!
 
 ### Supported environment variables
 
@@ -91,7 +91,7 @@ Assuming that you installed VSCodePortable on `D:\Apps\VSCodePortable` (where `V
   * `SystemRoot` : `C:\Windows`
   * More from [here](https://ss64.com/nt/syntax-variables.html)
 
-**Note:** Some of the environment variables listed here are personally made by myself, so they will not appear on the reference sites.
+**Note:** Some environment variables listed here are personally made by myself, so they will not appear on the referenced sites.
 
 ## Recommended DE Setup
 
