@@ -8,7 +8,7 @@ ${SegmentPreExec}
 	ExpandEnvStrings "$GitDir" "$GitDir"
 
 	${If} ${FileExists} "$GitDir\cmd\git.exe"
-		StrCpy "$ExtraPath" "$ExtraPath;$GitDir\bin;$GitDir\cmd"
+		StrCpy "$ExtraPath" "$ExtraPath;$GitDir\cmd;$GitDir\bin"
 
 		; Change Git home directory (may affect MinGW, MSYS, and other Unix emulated programs)
 		; The default is "%UserProfile%", which can be dirty if there are too many config files
@@ -30,7 +30,7 @@ ${SegmentPreExec}
 		${EndIf}
 
 		${If} ${FileExists} "$GitDir\post-install.bat"
-			; Git post installation script (if you're using the thumbdrive edition)
+			; Git post installation script (if you're using the portable edition)
 			nsExec::Exec '"$CmdPath" /C ""$GitDir\post-install.bat""'
 		${EndIf}
 	${EndIf}

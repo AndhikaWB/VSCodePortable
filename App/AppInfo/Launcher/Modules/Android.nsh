@@ -35,10 +35,11 @@ ${SegmentPreExec}
 		FileClose $R1
 
 		; Change Android Studio config and system files directory
-		; The default is "%AppData%\Google\AndroidStudioX.Y" (config)
-		; Or "%LocalAppData%\Google\AndroidStudioX.Y" (system)
+		; Default config path: "%AppData%\Google\AndroidStudioX.Y"
+		; Default system path: "%LocalAppData%\Google\AndroidStudioX.Y"
 		${ReadUserConfig} "$ChangeAndroidStudioConfig" "ChangeAndroidStudioConfig"
 		${If} "$ChangeAndroidStudioConfig" == "true"
+			; Now unified in the ".AndroidStudio" directory
 			StrCpy $R1 "$DataDir\misc\.AndroidStudio"
 			CreateDirectory $R1
 
@@ -46,7 +47,7 @@ ${SegmentPreExec}
 			CopyFiles /Silent "$AndroidStudioDir\bin\idea.properties" $R1
 			CopyFiles /Silent "$AndroidStudioDir\bin\studio64.exe.vmoptions" $R1
 
-			; Overwrite Android Studio properties (must use forward slash)
+			; Overwrite the value on the properties file (path must use forward slash)
 			ExpandEnvStrings $R2 "%PAL:DataDir:ForwardSlash%/.AndroidStudio"
 			${ConfigWrite} "$R1\idea.properties" "idea.config.path=" "$R2/config" $R3
 			${ConfigWrite} "$R1\idea.properties" "idea.system.path=" "$R2/system" $R3
@@ -58,40 +59,42 @@ ${SegmentPreExec}
 			${SetEnvironmentVariablesPath} "STUDIO_PROPERTIES" "$R1\idea.properties"
 			${SetEnvironmentVariablesPath} "STUDIO_VM_OPTIONS" "$R1\studio64.exe.vmoptions"
 		${EndIf}
+	${EndIf}
 
-		; Android Studio doesn't always respect "ANDROID_HOME" and "ANDROID_USER_HOME"
-		; As a workaround, I simply use junctions to link some of these directories
-		; Junction will not be created if the linked directory already exists
+	; Android Studio doesn't always respect "ANDROID_HOME" and "ANDROID_USER_HOME"
+	; As a workaround, I simply use junctions to link those 2 directories
+	; The junction will not be created if the linked directory already exists
+	${ReadUserConfig} "$CreateJunctionsToAndroid" "CreateJunctionsToAndroid"
+	${If} "$CreateJunctionsToAndroid" == "true"
+		; Create junction to Android SDK directory
+		; The default is "%LocalAppData%\Android\Sdk"
+		${ReadUserConfig} "$PathToAndroidSdk" "PathToAndroidSdk"
+		ExpandEnvStrings "$PathToAndroidSdk" "$PathToAndroidSdk"
 
-		${ReadUserConfig} "$CreateJunctionsToAndroid" "CreateJunctionsToAndroid"
-		${If} "$CreateJunctionsToAndroid" == "true"
-			; Create junction to Android SDK directory
-			; The default is "%LocalAppData%\Android\Sdk"
-			${ReadUserConfig} "$PathToAndroidSdk" "PathToAndroidSdk"
-			ExpandEnvStrings "$PathToAndroidSdk" "$PathToAndroidSdk"
-
-			${If} ${FileExists} "$PathToAndroidSdk\*.*"
-				CreateDirectory "$LOCALAPPDATA\Android"
-				; Try to delete empty directory before linking the junction
-				nsExec::Exec '"$CmdPath" /C "rmdir "$LOCALAPPDATA\Android\Sdk""'
-				nsExec::Exec '"$CmdPath" /C "mklink /J "$LOCALAPPDATA\Android\Sdk" "$PathToAndroidSdk""'
-			${EndIf}
-
-			; Create junction to Android AVD directory
-			; The default is "%UserProfile%\.android\avd"
-			${ReadUserConfig} "$PathToAndroidAvd" "PathToAndroidAvd"
-			ExpandEnvStrings "$PathToAndroidAvd" "$PathToAndroidAvd"
-
-			${If} ${FileExists} "$PathToAndroidAvd\*.*"
-				CreateDirectory "$PROFILE\.android"
-				; Try to delete empty directory before linking the junction
-				nsExec::Exec '"$CmdPath" /C "rmdir "$PROFILE\.android\avd""'
-				nsExec::Exec '"$CmdPath" /C "mklink /J "$PROFILE\.android\avd" "$PathToAndroidAvd""'
-			${EndIf}
-
-			; ${SetEnvironmentVariablesPath} "ANDROID_HOME" "$LOCALAPPDATA\Android\Sdk"
-			; ${SetEnvironmentVariablesPath} "ANDROID_AVD_HOME" "$PROFILE\.android\avd"
+		${If} ${FileExists} "$PathToAndroidSdk\*.*"
+			CreateDirectory "$LOCALAPPDATA\Android"
+			; Try to delete empty directory before linking the junction
+			nsExec::Exec '"$CmdPath" /C "rmdir "$LOCALAPPDATA\Android\Sdk""'
+			nsExec::Exec '"$CmdPath" /C "mklink /J "$LOCALAPPDATA\Android\Sdk" "$PathToAndroidSdk""'
+			; Add command line tools to "PATH" (for managing things without Android Studio)
+			StrCpy "$ExtraPath" "$ExtraPath;$PathToAndroidSdk\cmdline-tools\latest\bin"
 		${EndIf}
+
+		; Create junction to Android AVD directory
+		; The default is "%UserProfile%\.android\avd"
+		${ReadUserConfig} "$PathToAndroidAvd" "PathToAndroidAvd"
+		ExpandEnvStrings "$PathToAndroidAvd" "$PathToAndroidAvd"
+
+		${If} ${FileExists} "$PathToAndroidAvd\*.*"
+			CreateDirectory "$PROFILE\.android"
+			; Try to delete empty directory before linking the junction
+			nsExec::Exec '"$CmdPath" /C "rmdir "$PROFILE\.android\avd""'
+			nsExec::Exec '"$CmdPath" /C "mklink /J "$PROFILE\.android\avd" "$PathToAndroidAvd""'
+		${EndIf}
+
+		${SetEnvironmentVariablesPath} "ANDROID_HOME" "$LOCALAPPDATA\Android\Sdk"
+		${SetEnvironmentVariablesPath} "ANDROID_AVD_HOME" "$PROFILE\.android\avd"
+		${SetEnvironmentVariablesPath} "ANDROID_USER_HOME" "$DataDir\misc\.android"
 	${EndIf}
 !macroend
 
@@ -109,6 +112,13 @@ ${SegmentPostPrimary}
 		nsExec::Exec '"$CmdPath" /C "rmdir "$PROFILE\.android\avd""'
 	${EndIf}
 
+	; Android SDK manager cache (license, metadata, etc.)
+	Delete "$PROFILE\.android\cache\*.xml"
+	RMDir "$PROFILE\.android\cache"
+
+	; Emulator console auth token (will be recreated if deleted)
+	Delete "$PROFILE\.emulator_console_auth_token"
+
 	; Android Studio consent options file
 	Delete "$APPDATA\Google\consentOptions\accepted"
 	RMDir "$APPDATA\Google\consentOptions"
@@ -120,6 +130,7 @@ ${SegmentPostPrimary}
 	RMDir "$APPDATA\Google"
 
 	; Android emulator settings
+	DeleteRegKey /ifempty HKCU "Software\Android Open Source Project\Emulator\set"
 	DeleteRegKey /ifempty HKCU "Software\Android Open Source Project\Emulator"
 	DeleteRegKey /ifempty HKCU "Software\Android Open Source Project"
 !macroend

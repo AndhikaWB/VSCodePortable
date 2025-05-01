@@ -7,6 +7,8 @@ ${SegmentPreExec}
 	${ReadUserConfig} "$BunDir" "BunDir"
 	ExpandEnvStrings "$BunDir" "$BunDir"
 
+	; Please create the "bin" folder manually if needed
+	; The official Bun documentation uses this structure
 	${If} ${FileExists} "$BunDir\bin\bun.exe"
 		StrCpy "$ExtraPath" "$ExtraPath;$BunDir\bin"
 
