@@ -6,5 +6,7 @@
     "workbench.enableExperiments": false,
     "workbench.settings.enableNaturalLanguageSearch": false,
     "editor.bracketPairColorization.enabled": true,
+	"editor.guides.bracketPairs": true,
+	"editor.linkedEditing": true,
     "editor.minimap.renderCharacters": false
 }
