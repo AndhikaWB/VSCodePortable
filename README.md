@@ -2,7 +2,7 @@
 
 Visual Studio Code in [PortableApps.com](https://portableapps.com/) format (unofficial).
 
-Support some well known development environments, and will also try to portabilize files for those environments (e.g. Git, Python, Node.js). See the full list [here](App\FirstRun\VSCodePortable.ini).
+Support some well known development environments, and will also try to portabilize files for those environments (e.g. Git, Python, Node.js). See the full list [here](App/FirstRun/VSCodePortable.ini).
 
 In order for portablization to work, you should always run from `VSCodePortable.exe` instead of `Code.exe` directly. `VSCodePortable.exe` will monitor things and clean them up when you close Visual Studio Code.
 
@@ -21,7 +21,7 @@ If you're using it for the first time, you can stop at step 2. If you're updatin
 
 ## Supported Environment
 
-Below is an example of `{ROOT}\VSCodePortable.ini` file (example may not be up to date). You can check what environments are supported on this file
+Below is an example of `{ROOT}\VSCodePortable.ini` file (example may not be up-to-date). You can check what environments are supported on this file
 
 ```ini
 [Launch]
@@ -94,6 +94,7 @@ AndroidStudioDir=%PAL:CommonFilesDir%\Android\Studio
 ; Change to "Data\misc\.AndroidStudio"
 ChangeAndroidStudioConfig=true
 ; Create junctions to directories below (the path must exist)
+; Android user home will also be changed to "Data\misc\.android"
 CreateJunctionsToAndroid=true
 ; "$PathToAndroidSdk" will link to "%LocalAppData%\Android\Sdk"
 PathToAndroidSdk=%PAL:CommonFilesDir%\Android\Sdk
