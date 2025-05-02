@@ -48,7 +48,7 @@ ${SegmentPreExec}
 			CopyFiles /Silent "$AndroidStudioDir\bin\studio64.exe.vmoptions" $R1
 
 			; Overwrite the value on the properties file (path must use forward slash)
-			ExpandEnvStrings $R2 "%PAL:DataDir:ForwardSlash%/.AndroidStudio"
+			ExpandEnvStrings $R2 "%PAL:DataDir:ForwardSlash%/misc/.AndroidStudio"
 			${ConfigWrite} "$R1\idea.properties" "idea.config.path=" "$R2/config" $R3
 			${ConfigWrite} "$R1\idea.properties" "idea.system.path=" "$R2/system" $R3
 			${ConfigWrite} "$R1\idea.properties" "idea.plugins.path=" "$R2/config/plugins" $R3
