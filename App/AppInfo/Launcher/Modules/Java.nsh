@@ -25,8 +25,18 @@ ${SegmentPostPrimary}
 	; Java version and preferences
 	DeleteRegKey HKCU "Software\JavaSoft"
 
-	; Gradle tooling and cache files
-	Delete "$PROFILE\.tooling\gradle\versions.json"
-	RMDir "$PROFILE\.tooling\gradle"
-	RMDir "$PROFILE\.tooling"
+	${If} "$ChangeGradleUserHome" == "true"
+		; Gradle daemon log files
+		FindFirst $R1 $R2 "$DataDir\misc\.gradle\daemon\*.*"
+		CheckLog:
+		${If} $R2 != ""
+			Delete "$DataDir\misc\.gradle\daemon\$R2\*.log"
+			FindNext $R1 $R2
+			Goto CheckLog
+		${EndIf}
+		FindClose $R1
+
+		; Gradle temporary files
+		RMDir /r "$DataDir\misc\.gradle\.tmp"
+	${EndIf}
 !macroend

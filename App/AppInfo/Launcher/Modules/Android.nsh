@@ -29,8 +29,8 @@ ${SegmentPreExec}
 
 		; Flutter tries to find Android Studio by reading a ".home" file
 		; You can check this on the "android_studio.dart" file in the source code
-		CreateDirectory "$LOCALAPPDATA\Google\AndroidStudio$AndroidStudioVer\system"
-		FileOpen $R1 "$LOCALAPPDATA\Google\AndroidStudio$AndroidStudioVer\system\.home" "w"
+		CreateDirectory "$LOCALAPPDATA\Google\AndroidStudio$AndroidStudioVer"
+		FileOpen $R1 "$LOCALAPPDATA\Google\AndroidStudio$AndroidStudioVer\.home" "w"
 		FileWrite $R1 "$AndroidStudioDir"
 		FileClose $R1
 
@@ -92,19 +92,21 @@ ${SegmentPreExec}
 			nsExec::Exec '"$CmdPath" /C "mklink /J "$PROFILE\.android\avd" "$PathToAndroidAvd""'
 		${EndIf}
 
-		${SetEnvironmentVariablesPath} "ANDROID_HOME" "$LOCALAPPDATA\Android\Sdk"
-		${SetEnvironmentVariablesPath} "ANDROID_AVD_HOME" "$PROFILE\.android\avd"
-		${SetEnvironmentVariablesPath} "ANDROID_USER_HOME" "$DataDir\misc\.android"
+		; ${SetEnvironmentVariablesPath} "ANDROID_HOME" "$LOCALAPPDATA\Android\Sdk"
+		; ${SetEnvironmentVariablesPath} "ANDROID_AVD_HOME" "$PROFILE\.android\avd"
 	${EndIf}
 !macroend
 
 ${SegmentPostPrimary}
 	; Android Studio dummy ".home" file
 	${If} "$AndroidStudioExists" == "true"
-		Delete "$LOCALAPPDATA\Google\AndroidStudio$AndroidStudioVer\system\.home"
-		RMDir "$LOCALAPPDATA\Google\AndroidStudio$AndroidStudioVer\system"
+		Delete "$LOCALAPPDATA\Google\AndroidStudio$AndroidStudioVer\.home"
 		RMDir "$LOCALAPPDATA\Google\AndroidStudio$AndroidStudioVer"
 	${EndIf}
+
+	; Android SDK temporary files (e.g. incomplete downloads)
+	; Doesn't delete temporary "system-images", must be checked manually
+	RMDir /r "$LOCALAPPDATA\Android\Sdk\.temp"
 
 	; Android SDK and AVD junctions
 	${If} "$CreateJunctionsToAndroid" == "true"
@@ -112,7 +114,7 @@ ${SegmentPostPrimary}
 		nsExec::Exec '"$CmdPath" /C "rmdir "$PROFILE\.android\avd""'
 	${EndIf}
 
-	; Android SDK manager cache (license, metadata, etc.)
+	; Android SDK manager cache (URL, license, and metadata)
 	Delete "$PROFILE\.android\cache\*.xml"
 	RMDir "$PROFILE\.android\cache"
 

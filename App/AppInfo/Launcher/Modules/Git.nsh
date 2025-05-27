@@ -18,14 +18,18 @@ ${SegmentPreExec}
 			CreateDirectory "$DataDir\misc"
 
 			; Also copy custom shell config (Bash and Zsh) if they don't exist yet
-			; This will make an alias for "cd" command so it will still point to "%UserProfile%"
-			; If you're using mod like Oh My Zsh, this file may get overwritten, so copy manually again
+			; - Enable workaround to save command history even on unclean exit
+			; - Contains an alias for the "cd" command so it will still point to "%UserProfile%"
+			; - Add Conda lazy hook so you can use "conda activate" without "conda init" first
+			; - Freshen up the default Git prompt a bit (with bold text and slightly different color)
 			${IfNot} ${FileExists} "$DataDir\misc\.bashrc"
 				CopyFiles /Silent "$DefaultDataDir\misc\.bashrc" "$DataDir\misc"
+				CopyFiles /Silent "$DefaultDataDir\misc\.config\git\git-prompt.sh" "$DataDir\misc\.config\git\git-prompt.sh"
 			${EndIf}
 
 			${IfNot} ${FileExists} "$DataDir\misc\.zshrc"
 				CopyFiles /Silent "$DefaultDataDir\misc\.zshrc" "$DataDir\misc"
+				CopyFiles /Silent "$DefaultDataDir\misc\.zshenv" "$DataDir\misc\.zshenv"
 			${EndIf}
 		${EndIf}
 
