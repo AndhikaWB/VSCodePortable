@@ -1,31 +1,32 @@
 Var PythonDir
 Var ChangePythonUserBase
 Var ChangePipCache
+Var DeletePipCacheOnExit
 Var ChangeJupyterData
 
 ${SegmentFile}
 
 ${SegmentPreExec}
-	${ReadUserConfig} "$PythonDir" "PythonDir"
+	${ReadCustomConfig} "$PythonDir" "Python" "Path" "%PAL:CommonFilesDir%\Python"
 	ExpandEnvStrings "$PythonDir" "$PythonDir"
 
 	${If} ${FileExists} "$PythonDir\python.exe"
-		${ReadUserConfig} "$ChangePythonUserBase" "ChangePythonUserBase"
+		${ReadCustomConfig} "$ChangePythonUserBase" "Python" "ChangePythonUserBase" "true"
 		${If} "$ChangePythonUserBase" == "true"
 			; Change Python user base directory (the default is "%AppData%\Python")
-			; This will affect user libraries only, not globally installed libraries
+			; This will only affect user libraries, not globally installed libraries
 			; https://docs.python.org/3/using/cmdline.html#environment-variables
 			${SetEnvironmentVariablesPath} "PYTHONUSERBASE" "$DataDir\misc\AppData\Roaming\Python"
 		${EndIf}
 
-		${ReadUserConfig} "$ChangePipCache" "ChangePipCache"
+		${ReadCustomConfig} "$ChangePipCache" "Python" "ChangePipCache" "true"
 		${If} "$ChangePipCache" == "true"
-			; Change Pip cache directory (the default is "%LocalAppData%\pip\cache")
+			; Change pip cache directory (the default is "%LocalAppData%\pip\cache")
 			${SetEnvironmentVariablesPath} "PIP_CACHE_DIR" "$DataDir\misc\AppData\Local\pip\cache"
 		${EndIf}
 
 		; Jupyter is not really Python specific, but mostly used for Python
-		${ReadUserConfig} "$ChangeJupyterData" "ChangeJupyterData"
+		${ReadCustomConfig} "$ChangeJupyterData" "Python" "ChangeJupyterData" "true"
 		${If} "$ChangeJupyterData" == "true"
 			; Change Jupyter kernel and extension data directory (the default is "%AppData%\jupyter")
 			; "JUPYTER_PATH" is needed because Jupyter can't find the new directory automatically
@@ -34,9 +35,9 @@ ${SegmentPreExec}
 			${SetEnvironmentVariablesPath} "JUPYTER_PATH" "$DataDir\misc\AppData\Roaming\jupyter"
 		${EndIf}
 
-		; Get user "scripts" directory and add it to "PATH"
+		; Get current user "scripts" directory and add it to "PATH"
 		; The default is "%AppData%\Python\PythonXXX\site-packages" (version specific)
-		nsExec::ExecToStack '"$PythonDir\python.exe" -m site --user-site'
+		${RunCmdToStack} '"$PythonDir\python.exe" -m site --user-site'
 		Pop $R1
 
 		${If} $R1 == 0
@@ -52,6 +53,7 @@ ${SegmentPreExec}
 ${SegmentPostPrimary}
 	; Jupyter config files (see above link)
 	Delete "$PROFILE\.jupyter\migrated"
+	RMDir /r "$PROFILE\.jupyter\runtime"
 	RMDir "$PROFILE\.jupyter"
 
 	; Keras base directory (downloaded models, etc.)
@@ -69,7 +71,10 @@ ${SegmentPostPrimary}
 
 	; Pip cache files
 	${If} "$ChangePipCache" == "true"
-		RMDir /r "$DataDir\misc\AppData\Local\pip\cache"
+		${ReadCustomConfig} "$DeletePipCacheOnExit" "Python" "DeletePipCacheOnExit" "true"
+		${If} "$DeletePipCacheOnExit" == "true"
+			RMDir /r "$DataDir\misc\AppData\Local\pip\cache"
+		${EndIf}
 	${EndIf}
 
 	; Pip stub directories

@@ -1,26 +1,27 @@
 Var BunDir
 Var ChangeBunInstall
+Var DeleteBunCacheOnExit
 
 ${SegmentFile}
 
 ${SegmentPreExec}
-	${ReadUserConfig} "$BunDir" "BunDir"
+	${ReadCustomConfig} "$BunDir" "Bun" "Path" "%PAL:CommonFilesDir%\Bun"
 	ExpandEnvStrings "$BunDir" "$BunDir"
 
 	; Please create the "bin" folder manually if needed
-	; The official Bun documentation uses this structure
+	; The official Bun documentation uses this folder structure
 	${If} ${FileExists} "$BunDir\bin\bun.exe"
 		StrCpy "$ExtraPath" "$ExtraPath;$BunDir\bin"
 
 		; Change Bun install directory (the default is "%UserProfile%\.bun")
 		; https://github.com/oven-sh/bun/issues/12886
-		${ReadUserConfig} "$ChangeBunInstall" "ChangeBunInstall"
+		${ReadCustomConfig} "$ChangeBunInstall" "Bun" "ChangeBunInstall" "true"
 		${If} "$ChangeBunInstall" == "true"
 			${SetEnvironmentVariablesPath} "BUN_INSTALL" "$DataDir\misc\.bun"
 			StrCpy "$ExtraPath" "$ExtraPath;$DataDir\misc\.bun\bin"
 		${EndIf}
 
-		; Disable telemetry
+		; Disable Bun telemetry
 		${SetEnvironmentVariablesPath} "DO_NOT_TRACK" "1"
 	${EndIf}
 !macroend
@@ -28,7 +29,10 @@ ${SegmentPreExec}
 ${SegmentPostPrimary}
 	; Bun install cache files
 	${If} "$ChangeBunInstall" == "true"
-		RMDir /r "$DataDir\misc\.bun\install\cache"
+		${ReadCustomConfig} "$DeleteBunCacheOnExit" "Bun" "DeleteBunCacheOnExit" "true"
+		${If} "$DeleteBunCacheOnExit" == "true"
+			RMDir /r "$DataDir\misc\.bun\install\cache"
+		${EndIf}
 	${EndIf}
 
 	; Bun stub directories

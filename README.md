@@ -2,113 +2,103 @@
 
 Visual Studio Code in [PortableApps.com](https://portableapps.com/) format (unofficial).
 
-Support some well known development environments, and will also try to portabilize files for those environments (e.g. Git, Python, Node.js). See the full list [here](App/FirstRun/VSCodePortable.ini).
+Support some well known development environments, and will also try to portabilize files for those environments (e.g. Git, Python, Node.js). See the full list [here](App/FirstRun/settings/Custom.ini).
 
 In order for portablization to work, you should always run from `VSCodePortable.exe` instead of `Code.exe` directly. `VSCodePortable.exe` will monitor things and clean them up when you close Visual Studio Code.
 
 ## Update Procedure
 
-If you're using it for the first time, you can stop at step 2. If you're updating from older release, follow all these steps.
+If you're using it for the first time, you can stop at step 2. If you're updating from older release, follow all these steps:
 
 1. Download the latest [release](https://github.com/AndhikaWB/VSCodePortable/releases) of VSCodePortable
 2. Run the portable installer, and it will download the latest version of VS Code automatically
 3. If you want to update VS Code only (not the launcher), [download](https://go.microsoft.com/fwlink/?Linkid=850641) VS Code manually and replace the `App\VSCode` folder. However, don't delete the `App\VSCode\Data` folder because that's where your VS Code data are stored
-4. Replace `{ROOT}\VSCodePortable.ini` with `App\FirstRun\VSCodePortable.ini` (the newest version), and backup your `{ROOT}\Data` folder. This is recommended because I occasionally release breaking changes (e.g. changed folder structure in `{ROOT}\Data`)
-5. Run `VSCodePortable.exe`, test your usual environment (e.g. Python), and see if there's structural changes in the `{ROOT}\Data` folder. Once you're familiar with the new changes, you can copy back your old data
+4. Compare `Data\settings\Custom.ini` with `App\FirstRun\settings\Custom.ini` (the newest revision), and backup your `Data` folder. This is recommended because I occasionally release breaking changes (e.g. changing folder structures)
+5. Run `VSCodePortable.exe`, test your usual environment (e.g. Python), and see if there's structural changes in the `Data` folder. Once you're familiar with the new changes, you can copy back your old data selectively
 6. Done
 
 **Note:** If Windows blocked you from running the app, right click the file, select "Properties" then "Unblock". This is the standard treatment for most files downloaded from the internet.
 
 ## Supported Environment
 
-Below is an example of `{ROOT}\VSCodePortable.ini` file (example may not be up-to-date). You can check what environments are supported on this file
+Below is an example of `Custom.ini` file (example may not be up-to-date). You can check what environments are supported in [this file](App/FirstRun/settings/Custom.ini).
 
 ```ini
-[Launch]
-; Additional parameters to pass to VS Code
-AdditionalParameters=
-; Override "PATH" variable for the VS Code process
-; Use "%PATH%;XXX" to append directory to original "PATH"
-; Use "%__clean__%" to emulate clean Windows 11 "PATH"
-OverridePath=
+[Path]
+Base=%PATH%
 
 [Git]
-; Will check "$GitDir\cmd\git.exe"
-GitDir=%PAL:CommonFilesDir%\Git
-; Change to "Data\misc"
+Path=%PAL:CommonFilesDir%\Git
+; Change "HOME" to misc folder
 ChangeUnixHome=true
 
 [MinGW]
-; Will check "$MinGWDir\bin\gcc.exe"
-MinGWDir=%PAL:CommonFilesDir%\MinGW
+Path=%PAL:CommonFilesDir%\MinGW
 
 [Java]
-; Will check "$JavaDir\bin\java.exe"
-JavaDir=%PAL:CommonFilesDir%\OpenJDK
-; Change to "Data\misc\.gradle"
+Path=%PAL:CommonFilesDir%\Java
+; Change "GRADLE_USER_HOME" to misc folder
 ChangeGradleUserHome=true
 
 [Python]
-; Will check "$PythonDir\python.exe"
-PythonDir=%PAL:CommonFilesDir%\Python
-; Change to "Data\misc\AppData\Roaming\Python"
+Path=%PAL:CommonFilesDir%\Python
+; Change "PYTHONUSERBASE" to misc folder
 ChangePythonUserBase=true
-; Change to "Data\misc\AppData\Local\pip\cache"
+; Change "PIP_CACHE_DIR" to misc folder
 ChangePipCache=true
-; Change to "Data\misc\AppData\Roaming\jupyter"
+; Delete pip cache if the above is true
+DeletePipCacheOnExit=true
+; Change "JUPYTER_DATA_DIR" to misc folder
 ChangeJupyterData=true
 
 [R]
-; Will check "$RDir\bin\R.exe"
-RDir=%PAL:CommonFilesDir%\R
-; Change to "Data\misc\AppData\Local\R\win-library\X.Y"
+Path=%PAL:CommonFilesDir%\R
+; Change "R_LIBS_USER" to misc folder
 ChangeRLibsUser=true
 
 [NodeJS]
-; Will check "$NodeJSDir\node.exe"
-NodeJSDir=%PAL:CommonFilesDir%\Node.js
-; Change to "Data\misc\AppData\Roaming\npm"
-ChangeNPMPrefix=true
+Path=%PAL:CommonFilesDir%\NodeJS
+; Change "NPM_CONFIG_PREFIX" to misc folder
+ChangeNpmPrefix=true
+; Delete npm cache if the above is true
+DeleteNpmCacheOnExit=true
 
 [Bun]
-; Will check "$BunDir\bin\bun.exe"
-BunDir=%PAL:CommonFilesDir%\Bun
-; Change to "Data\misc\.bun"
+Path=%PAL:CommonFilesDir%\Bun
+; Change "BUN_INSTALL" to misc folder
 ChangeBunInstall=true
+; Delete Bun cache if the above is true
+DeleteBunCacheOnExit=true
 
 [Go]
-; Will check "$GoDir\bin\go.exe"
-GoDir=%PAL:CommonFilesDir%\Go
-; Change to "Data\misc\Go"
+Path=%PAL:CommonFilesDir%\Go
+; Change "GOPATH" to misc folder
 ChangeGoPath=true
 
 [Rust]
-; Will check "$RustDir\bin\rustc.exe"
-RustDir=%PAL:CommonFilesDir%\Rust
-; Change to "Data\misc\Rust\.cargo"
+Path=%PAL:CommonFilesDir%\Rust
+; Change "CARGO_HOME" to misc folder
 ChangeCargoHome=true
+; Delete Cargo cache if the above is true
+DeleteCargeCacheOnExit=true
 
 [Android]
-; Will check "$AndroidStudioDir\bin\studio64.exe"
-AndroidStudioDir=%PAL:CommonFilesDir%\Android\Studio
-; Change to "Data\misc\.AndroidStudio"
+StudioPath=%PAL:CommonFilesDir%\Android\Studio
+; Change "idea.config.path" to misc folder
 ChangeAndroidStudioConfig=true
-; Create junctions to directories below (the path must exist)
-; Android user home will also be changed to "Data\misc\.android"
-CreateJunctionsToAndroid=true
-; "$PathToAndroidSdk" will link to "%LocalAppData%\Android\Sdk"
-PathToAndroidSdk=%PAL:CommonFilesDir%\Android\Sdk
-; "$PathToAndroidAvd" will link to "%UserProfile%\.android\avd"
-PathToAndroidAvd=%PAL:CommonFilesDir%\Android\Avd
+; Force change SDK and AVD path with junction
+; SDK and AVD path must exist for this to work
+UseSdkAvdJunction=true
+SdkPath=%PAL:CommonFilesDir%\Android\Sdk
+AvdPath=%PAL:CommonFilesDir%\Android\Avd
 
 [Flutter]
-; Will check "$FlutterDir\bin\dart.bat"
-FlutterDir=%PAL:CommonFilesDir%\Flutter
-; Change to "Data\misc\AppData\Local\Pub\Cache"
+Path=%PAL:CommonFilesDir%\Flutter
+; Change "PUB_CACHE" to misc folder
 ChangePubCache=true
 
 [PlatformIO]
-; Change to "Data\misc\.platformio"
+; Change "PLATFORMIO_CORE_DIR" to misc folder
 ChangePlatformIOCore=true
 ```
 
@@ -137,7 +127,7 @@ Here are some sources I personally use:
 |[Adoptium](https://adoptium.net/temurin/releases/)|Provides open-source version of (Java) JDK and JRE. Formerly known as [AdoptOpenJDK](https://adoptopenjdk.net/releases.html)|
 |[WinPython](https://winpython.github.io/)|Provides portable installer for Python. This is great since the official Python installer usually can't be extracted properly using workarounds (see below table).|
 |[MinGit](https://github.com/git-for-windows/git/releases)|Absolute minimal Git directly from the official repo (see [wiki](https://github.com/git-for-windows/git/wiki/MinGit)), even smaller than the portable installer|
-|[MSYS2](https://www.msys2.org/)|Lightweight WSL alternative that lets you download and update multiple packages using `pacman` without a hassle. Not thoroughly tested by me, some paths may differ than native packages|
+|[MSYS2](https://www.msys2.org/)|Lightweight WSL alternative that lets you download and update multiple packages using `pacman` without a hassle. Not thoroughly tested by me, some paths may differ than native Windows packages|
 
 For other development environments that are not listed here (e.g. Node.js, Go, Rust), you can usually extract the files from installer using 7-Zip, Universal Extractor 2, or Sandboxie-Plus. However, try searching for `.zip` or `.tar` release first before relying on those programs!
 

@@ -1,16 +1,17 @@
 Var NodeJSDir
-Var ChangeNPMPrefix
+Var ChangeNpmPrefix
+Var DeleteNpmCacheOnExit
 
 ${SegmentFile}
 
 ${SegmentPreExec}
-	${ReadUserConfig} "$NodeJSDir" "NodeJSDir"
+	${ReadCustomConfig} "$NodeJSDir" "NodeJS" "Path" "%PAL:CommonFilesDir%\NodeJS"
 	ExpandEnvStrings "$NodeJSDir" "$NodeJSDir"
 
 	${If} ${FileExists} "$NodeJSDir\node.exe"
-		${ReadUserConfig} "$ChangeNPMPrefix" "ChangeNPMPrefix"
-		${If} "$ChangeNPMPrefix" == "true"
-			; Force change NPM user prefix and cache directory
+		${ReadCustomConfig} "$ChangeNpmPrefix" "NodeJS" "ChangeNpmPrefix" "true"
+		${If} "$ChangeNpmPrefix" == "true"
+			; Change npm user prefix and cache directory
 			; The default locations are "%AppData%\npm" and "%AppData%\npm-cache"
 			${SetEnvironmentVariablesPath} "NPM_CONFIG_PREFIX" "$DataDir\misc\AppData\Roaming\npm"
 			${SetEnvironmentVariablesPath} "NPM_CONFIG_CACHE" "$DataDir\misc\AppData\Roaming\npm-cache"
@@ -21,13 +22,13 @@ ${SegmentPreExec}
 		${EndIf}
 
 		; Get prefix directory and add it to "PATH"
-		nsExec::ExecToStack '"$CmdPath" /C ""$NodeJSDir\npm.cmd" config get prefix"'
+		${RunCmdToStack} '"$NodeJSDir\npm.cmd" config get prefix'
 		Pop $R1
 
 		${If} $R1 == 0
 			Pop $R2
-			; Trim trailing newline from npm output
-			; This will break "PATH" if left untouched
+			; Trim trailing newline from the npm output
+			; This will break "PATH" on some shells if left untouched
 			${TrimNewLines} $R2 $R2
 			StrCpy "$ExtraPath" "$ExtraPath;$NodeJSDir;$R2"
 		${Else}
@@ -42,12 +43,15 @@ ${SegmentPostPrimary}
 	RMDir "$PROFILE\.config\configstore"
 	RMDir "$PROFILE\.config"
 
-	; NPM cache files
-	${If} "$ChangeNPMPrefix" == "true"
-		RMDir /r "$DataDir\misc\AppData\Roaming\npm-cache"
+	; Npm cache files
+	${If} "$ChangeNpmPrefix" == "true"
+		${ReadCustomConfig} "$DeleteNpmCacheOnExit" "NodeJS" "DeleteNpmCacheOnExit" "true"
+		${If} "$DeleteNpmCacheOnExit" == "true"
+			RMDir /r "$DataDir\misc\AppData\Roaming\npm-cache"
+		${EndIf}
 	${EndIf}
 
-	; Stub NPM directories
+	; Npm stub directories
 	RMDir "$APPDATA\npm-cache"
 	RMDir "$APPDATA\npm"
 !macroend

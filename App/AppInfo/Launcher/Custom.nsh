@@ -1,91 +1,72 @@
 !include "${PACKAGE}\App\AppInfo\Launcher\Modules\*.nsh"
 
-Var CmdPath
-
 Var AppDir
-Var VSCodeDataDir
 Var DataDir
-Var DefaultDataDir
+Var FirstRunDir
+Var IsFirstRun
 
+Var CmdPath
 Var BasePath
 Var ExtraPath
 
 ${SegmentFile}
 
 ${SegmentInit}
-	; Command prompt executable path
+	; Shortcut to command prompt executable
 	ExpandEnvStrings "$CmdPath" "%COMSPEC%"
 
-	; VS Code app directory
+	; Shortcut to launcher related paths
 	StrCpy "$AppDir" "$EXEDIR\App"
-	; VS Code data directory
-	StrCpy "$VSCodeDataDir" "$EXEDIR\App\VSCode\data"
-	; Launcher and other data directory (e.g. downloaded Python libraries)
 	StrCpy "$DataDir" "$EXEDIR\Data"
-	; Default directory for all initial data (used on the first run)
-	StrCpy "$DefaultDataDir" "$EXEDIR\App\FirstRun"
+	StrCpy "$FirstRunDir" "$EXEDIR\App\FirstRun"
 
-	; Copy default "VSCodePortable.ini" (first run)
-	${IfNot} ${FileExists} "$EXEDIR\$AppID.ini"
-		CopyFiles /Silent "$DefaultDataDir\$AppID.ini" "$EXEDIR\$AppID.ini"
+	${IfNot} ${FileExists} "$DataDir\settings\VSCodePortable*.ini"
+		StrCpy "$IsFirstRun" "true"
 	${EndIf}
+!macroend
 
-	; Copy default VS Code "user-data" folder (first run)
-	CreateDirectory "$VSCodeDataDir"
-	${IfNot} ${FileExists} "$VSCodeDataDir\user-data\*.*"
-		CopyFiles /Silent "$DefaultDataDir\VSCode\user-data\*.*" "$VSCodeDataDir\user-data"
-	${EndIf}
+${SegmentPrePrimary}
+	${If} "$IsFirstRun" == "true"
+		; Copy launcher config
+		CreateDirectory "$DataDir\settings"
+		CopyFiles "$FirstRunDir\settings\Custom.ini" "$DataDir\settings\Custom.ini"
 
-	; Install user provided VSIX files if exists (first run)
-	${IfNot} ${FileExists} "$VSCodeDataDir\extensions\*.*"
-		FindFirst $R1 $R2 "$DefaultDataDir\VSCode\extensions\*.vsix"
+		; Copy default user config
+		CreateDirectory "$AppDir\VSCode\data\user-data"
+		CopyFiles "$FirstRunDir\VSCode\user-data\*.*" "$AppDir\VSCode\data\user-data"
+
+		; Install user provided VSIX files
+		FindFirst $R1 $R2 "$FirstRunDir\VSCode\extensions\*.vsix"
 		CheckVsix:
 		${If} $R2 != ""
 			MessageBox MB_YESNO|MB_ICONQUESTION 'Do you want to install "$R2"? It may take a while, please be patient.' IDNO +2
-			ExecWait '"$CmdPath" /C ""$AppDir\VSCode\bin\code.cmd" --install-extension "$DefaultDataDir\VSCode\extensions\$R2""'
+			ExecWait '"$CmdPath" /C ""$AppDir\VSCode\bin\code.cmd" --install-extension "$FirstRunDir\VSCode\extensions\$R2""'
 			FindNext $R1 $R2
 			Goto CheckVsix
 		${EndIf}
 		FindClose $R1
 	${EndIf}
 
-	; Create shortcut to VS Code "user-data" folder
-	CreateDirectory "$DataDir"
-	Delete "$DataDir\user-data.lnk"
-	CreateShortCut "$DataDir\user-data.lnk" "$VSCodeDataDir\user-data"
-
-	; Create shortcut to VS Code "extensions" folder
-	Delete "$DataDir\extensions.lnk"
-	CreateShortCut "$DataDir\extensions.lnk" "$VSCodeDataDir\extensions"
+	${CreateShortcut} "$DataDir\user-data.lnk" "$AppDir\VSCode\data\user-data"
+	${CreateShortcut} "$DataDir\extensions.lnk" "$AppDir\VSCode\data\extensions"
 !macroend
 
 ${SegmentPre}
-	; Set environment variables for launcher related directories
+	; Full path to launcher directory
 	${SetEnvironmentVariablesPath} "PAL:LauncherDir" "$EXEDIR"
+	; Full path to launcher executable
 	${SetEnvironmentVariablesPath} "PAL:LauncherPath" "$EXEPATH"
-	${SetEnvironmentVariablesPath} "PAL:LauncherFile" "$EXEFILE"
 
-	; PortableAppsDir is the parent directory of the launcher directory
-	; CommonFilesDir can be used to store development environment binaries (e.g. Python)
+	; Parent directory of the launcher directory
 	${SetEnvironmentVariablesPath} "PAL:PortableAppsDir" "$PortableAppsDirectory"
+	; Directory for storing development environment binaries (e.g. Python, Node.js)
 	${SetEnvironmentVariablesPath} "PAL:CommonFilesDir" "$PortableAppsDirectory\CommonFiles"
-
-	; Example "PATH" from a clean installation of Windows 11
-	; Can be used to override system "PATH" if it's too long (see below)
-	${SetEnvironmentVariablesPath} "__clean__" "$WINDIR\System32;$WINDIR;$WINDIR\System32\WindowsPowerShell\v1.0;$WINDIR\System32\OpenSSH"
 !macroend
 
 ${SegmentPreExec}
-	; Override system "PATH" if provided in "VSCodePortable.ini"
-	; You can use "PATH=%__clean__%" to emulate a clean Windows installation
-	${ReadUserConfig} "$BasePath" "OverridePath"
-
-	; Read "PATH" from the system if not defined
-	${If} "$BasePath" == ""
-		ReadEnvStr "$BasePath" "PATH"
-	${EndIf}
-
-	; Always expand environment variables on "PATH"
+	; Override system "PATH" if provided in "Custom.ini" file
+	${ReadCustomConfig} "$BasePath" "Path" "Base" "%PATH%"
+	; Expand all environment variables on "PATH"
 	ExpandEnvStrings "$BasePath" "$BasePath"
 	; Initial value to be added to "PATH"
 	StrCpy "$ExtraPath" ""
@@ -105,9 +86,9 @@ ${SegmentPreExec}
 	${RunModule} PlatformIO
 
 	; Prepend all valid environments onto the "PATH" environment variable
-	; Modified "PATH" will only affect VS Code and all processes spawned by VS Code
+	; Modified "PATH" will only affect VS Code and all subprocesses spawned by VS Code
 	; If the "PATH" is longer than 8196 bytes, it will be reverted to default (NSIS limitation)
-	StrLen $R1 "$ExtraPath_$BasePath_"
+	StrLen $R1 "$ExtraPath;$BasePath"
 	IntOp $R1 $R1 * ${NSIS_CHAR_SIZE}
 	${If} $R1 < ${NSIS_MAX_STRLEN}
 		${SetEnvironmentVariablesPath} "PATH" "$ExtraPath;$BasePath"

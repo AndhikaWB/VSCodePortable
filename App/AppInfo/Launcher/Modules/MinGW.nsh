@@ -3,7 +3,7 @@ Var MinGWDir
 ${SegmentFile}
 
 ${SegmentPreExec}
-	${ReadUserConfig} "$MinGWDir" "MinGWDir"
+	${ReadCustomConfig} "$MinGWDir" "MinGW" "Path" "%PAL:CommonFilesDir%\MinGW"
 	ExpandEnvStrings "$MinGWDir" "$MinGWDir"
 
 	${If} ${FileExists} "$MinGWDir\bin\gcc.exe"

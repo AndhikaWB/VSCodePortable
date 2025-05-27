@@ -4,13 +4,13 @@ Var ChangeGoPath
 ${SegmentFile}
 
 ${SegmentPreExec}
-	${ReadUserConfig} "$GoDir" "GoDir"
+	${ReadCustomConfig} "$GoDir" "Go" "Path" "%PAL:CommonFilesDir%\Go"
 	ExpandEnvStrings "$GoDir" "$GoDir"
 
 	${If} ${FileExists} "$GoDir\bin\go.exe"
 		StrCpy "$ExtraPath" "$ExtraPath;$GoDir\bin"
 
-		${ReadUserConfig} "$ChangeGoPath" "ChangeGoPath"
+		${ReadCustomConfig} "$ChangeGoPath" "Go" "ChangeGoPath" "true"
 		${If} "$ChangeGoPath" == "true"
 			; Change "GOPATH" directory (the default is "%UserProfile%\Go")
 			; https://go.dev/wiki/GOPATH
@@ -20,8 +20,8 @@ ${SegmentPreExec}
 			StrCpy "$ExtraPath" "$ExtraPath;$DataDir\misc\Go\bin"
 		${EndIf}
 
-		; Disable telemetry
-		nsExec::Exec '"$CmdPath" /C ""$GoDir\bin\go.exe" telemetry off"'
+		; Disable Go telemetry
+		${RunCmd} '"$GoDir\bin\go.exe" telemetry off'
 	${EndIf}
 !macroend
 

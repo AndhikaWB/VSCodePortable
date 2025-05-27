@@ -2,16 +2,16 @@ Var AndroidStudioDir
 Var AndroidStudioExists
 
 Var ChangeAndroidStudioConfig
-Var AndroidStudioVer
+Var AndroidStudioVersion
 
-Var CreateJunctionsToAndroid
-Var PathToAndroidSdk
-Var PathToAndroidAvd
+Var UseSdkAvdJunction
+Var AndroidSdkDir
+Var AndroidAvdDir
 
 ${SegmentFile}
 
 ${SegmentPreExec}
-	${ReadUserConfig} "$AndroidStudioDir" "AndroidStudioDir"
+	${ReadCustomConfig} "$AndroidStudioDir" "Android" "StudioPath" "%PAL:CommonFilesDir%\Android\Studio"
 	ExpandEnvStrings "$AndroidStudioDir" "$AndroidStudioDir"
 
 	${If} ${FileExists} "$AndroidStudioDir\bin\studio64.exe"
@@ -19,33 +19,33 @@ ${SegmentPreExec}
 		; If run directly from file explorer, it won't be portablized
 		StrCpy "$ExtraPath" "$ExtraPath;$AndroidStudioDir\bin"
 
-		; Can be read by "Flutter.nsh" or other custom modules
+		; Can be read by "Flutter.nsh" and other launcher modules
 		; However, "Android.nsh" (this file) must be loaded first
 		StrCpy "$AndroidStudioExists" "true"
 
 		; Get the X.Y version of Android Studio (e.g. 2024.3)
 		${GetFileVersion} "$AndroidStudioDir\bin\studio64.exe" $R1
-		${WordFind} $R1 "." "+2{" "$AndroidStudioVer"
+		${WordFind} $R1 "." "+2{" "$AndroidStudioVersion"
 
-		; Flutter tries to find Android Studio by reading a ".home" file
+		; Flutter tries to find Android Studio by reading a dummy ".home" file
 		; You can check this on the "android_studio.dart" file in the source code
-		CreateDirectory "$LOCALAPPDATA\Google\AndroidStudio$AndroidStudioVer"
-		FileOpen $R1 "$LOCALAPPDATA\Google\AndroidStudio$AndroidStudioVer\.home" "w"
+		CreateDirectory "$LOCALAPPDATA\Google\AndroidStudio$AndroidStudioVersion"
+		FileOpen $R1 "$LOCALAPPDATA\Google\AndroidStudio$AndroidStudioVersion\.home" "w"
 		FileWrite $R1 "$AndroidStudioDir"
 		FileClose $R1
 
 		; Change Android Studio config and system files directory
 		; Default config path: "%AppData%\Google\AndroidStudioX.Y"
 		; Default system path: "%LocalAppData%\Google\AndroidStudioX.Y"
-		${ReadUserConfig} "$ChangeAndroidStudioConfig" "ChangeAndroidStudioConfig"
+		${ReadCustomConfig} "$ChangeAndroidStudioConfig" "Android" "ChangeAndroidStudioConfig" "true"
 		${If} "$ChangeAndroidStudioConfig" == "true"
 			; Now unified in the ".AndroidStudio" directory
 			StrCpy $R1 "$DataDir\misc\.AndroidStudio"
 			CreateDirectory $R1
 
 			; Copy the default properties and VM options file
-			CopyFiles /Silent "$AndroidStudioDir\bin\idea.properties" $R1
-			CopyFiles /Silent "$AndroidStudioDir\bin\studio64.exe.vmoptions" $R1
+			CopyFiles "$AndroidStudioDir\bin\idea.properties" $R1
+			CopyFiles "$AndroidStudioDir\bin\studio64.exe.vmoptions" $R1
 
 			; Overwrite the value on the properties file (path must use forward slash)
 			ExpandEnvStrings $R2 "%PAL:DataDir:ForwardSlash%/misc/.AndroidStudio"
@@ -61,57 +61,53 @@ ${SegmentPreExec}
 		${EndIf}
 	${EndIf}
 
-	; Android Studio doesn't always respect "ANDROID_HOME" and "ANDROID_USER_HOME"
+	; Android Studio doesn't always respect "ANDROID_HOME" and "ANDROID_AVD_HOME"
 	; As a workaround, I simply use junctions to link those 2 directories
-	; The junction will not be created if the linked directory already exists
-	${ReadUserConfig} "$CreateJunctionsToAndroid" "CreateJunctionsToAndroid"
-	${If} "$CreateJunctionsToAndroid" == "true"
+	${ReadCustomConfig} "$UseSdkAvdJunction" "Android" "UseSdkAvdJunction" "true"
+	${If} "$UseSdkAvdJunction" == "true"
 		; Create junction to Android SDK directory
 		; The default is "%LocalAppData%\Android\Sdk"
-		${ReadUserConfig} "$PathToAndroidSdk" "PathToAndroidSdk"
-		ExpandEnvStrings "$PathToAndroidSdk" "$PathToAndroidSdk"
+		${ReadCustomConfig} "$AndroidSdkDir" "Android" "SdkPath" "%PAL:CommonFilesDir%\Android\Sdk"
+		ExpandEnvStrings "$AndroidSdkDir" "$AndroidSdkDir"
 
-		${If} ${FileExists} "$PathToAndroidSdk\*.*"
+		${If} ${FileExists} "$AndroidSdkDir\*.*"
 			CreateDirectory "$LOCALAPPDATA\Android"
-			; Try to delete empty directory before linking the junction
-			nsExec::Exec '"$CmdPath" /C "rmdir "$LOCALAPPDATA\Android\Sdk""'
-			nsExec::Exec '"$CmdPath" /C "mklink /J "$LOCALAPPDATA\Android\Sdk" "$PathToAndroidSdk""'
+			${CreateJunction} "$LOCALAPPDATA\Android\sdk" "$AndroidSdkDir"
 			; Add command line tools to "PATH" (for managing things without Android Studio)
-			StrCpy "$ExtraPath" "$ExtraPath;$PathToAndroidSdk\cmdline-tools\latest\bin"
+			StrCpy "$ExtraPath" "$ExtraPath;$AndroidSdkDir\cmdline-tools\latest\bin"
 		${EndIf}
 
 		; Create junction to Android AVD directory
 		; The default is "%UserProfile%\.android\avd"
-		${ReadUserConfig} "$PathToAndroidAvd" "PathToAndroidAvd"
-		ExpandEnvStrings "$PathToAndroidAvd" "$PathToAndroidAvd"
+		${ReadCustomConfig} "$AndroidAvdDir" "Android" "AvdPath" "%PAL:CommonFilesDir%\Android\Avd"
+		ExpandEnvStrings "$AndroidAvdDir" "$AndroidAvdDir"
 
-		${If} ${FileExists} "$PathToAndroidAvd\*.*"
+		${If} ${FileExists} "$AndroidAvdDir\*.*"
 			CreateDirectory "$PROFILE\.android"
-			; Try to delete empty directory before linking the junction
-			nsExec::Exec '"$CmdPath" /C "rmdir "$PROFILE\.android\avd""'
-			nsExec::Exec '"$CmdPath" /C "mklink /J "$PROFILE\.android\avd" "$PathToAndroidAvd""'
+			${CreateJunction} "$PROFILE\.android\avd" "$AndroidAvdDir"
 		${EndIf}
 
-		; ${SetEnvironmentVariablesPath} "ANDROID_HOME" "$LOCALAPPDATA\Android\Sdk"
-		; ${SetEnvironmentVariablesPath} "ANDROID_AVD_HOME" "$PROFILE\.android\avd"
+		; Android Studio may ignore this, but let's add it anyway
+		${SetEnvironmentVariablesPath} "ANDROID_HOME" "$AndroidSdkDir"
+		${SetEnvironmentVariablesPath} "ANDROID_AVD_HOME" "$AndroidAvdDir"
 	${EndIf}
 !macroend
 
 ${SegmentPostPrimary}
 	; Android Studio dummy ".home" file
 	${If} "$AndroidStudioExists" == "true"
-		Delete "$LOCALAPPDATA\Google\AndroidStudio$AndroidStudioVer\.home"
-		RMDir "$LOCALAPPDATA\Google\AndroidStudio$AndroidStudioVer"
+		Delete "$LOCALAPPDATA\Google\AndroidStudio$AndroidStudioVersion\.home"
+		RMDir "$LOCALAPPDATA\Google\AndroidStudio$AndroidStudioVersion"
 	${EndIf}
 
 	; Android SDK temporary files (e.g. incomplete downloads)
-	; Doesn't delete temporary "system-images", must be checked manually
-	RMDir /r "$LOCALAPPDATA\Android\Sdk\.temp"
+	; This won't delete temporary "system-images", must be checked manually
+	RMDir /r "$LOCALAPPDATA\Android\sdk\.temp"
 
 	; Android SDK and AVD junctions
-	${If} "$CreateJunctionsToAndroid" == "true"
-		nsExec::Exec '"$CmdPath" /C "rmdir "$LOCALAPPDATA\Android\Sdk""'
-		nsExec::Exec '"$CmdPath" /C "rmdir "$PROFILE\.android\avd""'
+	${If} "$UseSdkAvdJunction" == "true"
+		${RemoveJunction} "$LOCALAPPDATA\Android\sdk"
+		${RemoveJunction} "$PROFILE\.android\avd"
 	${EndIf}
 
 	; Android SDK manager cache (URL, license, and metadata)

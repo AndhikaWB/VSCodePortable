@@ -1,19 +1,20 @@
 Var RustDir
 Var ChangeCargoHome
+Var DeleteCargeCacheOnExit
 
 ${SegmentFile}
 
 ${SegmentPreExec}
-	${ReadUserConfig} "$RustDir" "RustDir"
+	${ReadCustomConfig} "$RustDir" "Rust" "Path" "%PAL:CommonFilesDir%\Rust"
 	ExpandEnvStrings "$RustDir" "$RustDir"
 
 	; If using Rustup, this should be somewhere in the "toolchains" folder
-	; If you're using the standalone version, see the "rust-src" fix below
+	; If you're using the standalone version, download "rust-src" below if needed
 	; https://github.com/rust-lang/rust-analyzer/issues/4172#issuecomment-1664348160
 	${If} ${FileExists} "$RustDir\bin\rustc.exe"
 		StrCpy "$ExtraPath" "$ExtraPath;$RustDir\bin"
 
-		${ReadUserConfig} "$ChangeCargoHome" "ChangeCargoHome"
+		${ReadCustomConfig} "$ChangeCargoHome" "Rust" "ChangeCargoHome" "true"
 		${If} "$ChangeCargoHome" == "true"
 			; Change Cargo home directory (the default is "%UserProfile%\.cargo")
 			${SetEnvironmentVariablesPath} "CARGO_HOME" "$DataDir\misc\.cargo"
@@ -26,10 +27,13 @@ ${SegmentPreExec}
 ${SegmentPostPrimary}
 	; Cargo crate cache and unpacked source files
 	${If} "$ChangeCargoHome" == "true"
-		RMDir /r "$DataDir\misc\.cargo\registry\cache"
-		RMDir /r "$DataDir\misc\.cargo\registry\src"
+		${ReadCustomConfig} "$DeleteCargeCacheOnExit" "Rust" "DeleteCargeCacheOnExit" "true"
+		${If} "$DeleteCargeCacheOnExit" == "true"
+			RMDir /r "$DataDir\misc\.cargo\registry\cache"
+			RMDir /r "$DataDir\misc\.cargo\registry\src"
+		${EndIf}
 	${EndIf}
 
-	; Stub Cargo directory
+	; Cargo stub directory
 	RMDir "$PROFILE\.cargo"
 !macroend

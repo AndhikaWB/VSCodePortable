@@ -4,7 +4,7 @@ Var ChangeGradleUserHome
 ${SegmentFile}
 
 ${SegmentPreExec}
-	${ReadUserConfig} "$JavaDir" "JavaDir"
+	${ReadCustomConfig} "$JavaDir" "Java" "Path" "%PAL:CommonFilesDir%\Java"
 	ExpandEnvStrings "$JavaDir" "$JavaDir"
 
 	${If} ${FileExists} "$JavaDir\bin\java.exe"
@@ -12,7 +12,7 @@ ${SegmentPreExec}
 		${SetEnvironmentVariablesPath} "JAVA_HOME" "$JavaDir"
 
 		; Gradle is not really Java specific, but mostly used for Java
-		${ReadUserConfig} "$ChangeGradleUserHome" "ChangeGradleUserHome"
+		${ReadCustomConfig} "$ChangeGradleUserHome" "Java" "ChangeGradleUserHome" "true"
 		${If} "$ChangeGradleUserHome" == "true"
 			; Change Gradle user home directory (the default is "%UserProfile%\.gradle")
 			; https://docs.gradle.org/current/userguide/build_environment.html
@@ -22,7 +22,7 @@ ${SegmentPreExec}
 !macroend
 
 ${SegmentPostPrimary}
-	; Java version and preferences
+	; Java version and app preferences
 	DeleteRegKey HKCU "Software\JavaSoft"
 
 	${If} "$ChangeGradleUserHome" == "true"
